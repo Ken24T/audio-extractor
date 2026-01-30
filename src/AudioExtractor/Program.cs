@@ -47,7 +47,8 @@ internal static class Program
                 options.TtsLowpassHz,
                 options.TargetLufs,
                 options.Force,
-                options.Autoplay);
+                options.Autoplay,
+                options.Verbose);
 
             return Task.FromResult(exitCode);
         }
@@ -170,6 +171,11 @@ internal static class Program
                     options.Autoplay = true;
                     i++;
                     break;
+                case "--verbose":
+                case "-Verbose":
+                    options.Verbose = true;
+                    i++;
+                    break;
                 case "--tts-sample-rate":
                     options.TtsSampleRate = ReadInt(args, ref i, token);
                     break;
@@ -235,6 +241,7 @@ internal static class Program
         public int TargetLufs { get; set; }
         public bool Force { get; set; }
         public bool Autoplay { get; set; }
+        public bool Verbose { get; set; }
         public bool ShowHelp { get; set; }
 
         public static Options WithHelp() => new() { ShowHelp = true };
@@ -255,7 +262,8 @@ internal static class Program
         int ttsLowpassHz,
         int targetLufs,
         bool force,
-        bool autoplay)
+        bool autoplay,
+        bool verbose)
     {
         try
         {
@@ -360,7 +368,7 @@ internal static class Program
                     wavArgs.AddRange(new[] { "-ac", channels.Value.ToString() });
                 }
 
-                RunFfmpeg(resolvedFfmpeg, baseArgs.Concat(wavArgs).Concat(outArgs));
+                RunFfmpeg(resolvedFfmpeg, baseArgs.Concat(wavArgs).Concat(outArgs), verbose);
                 Console.WriteLine($"Done -> {output}");
                 
                 if (autoplay)
@@ -378,7 +386,7 @@ internal static class Program
                 .Concat(new[] { "-af", filter, "-ac", "1", "-ar", ttsSampleRate.ToString() })
                 .Concat(outArgs);
 
-            RunFfmpeg(resolvedFfmpeg, ttsArgs);
+            RunFfmpeg(resolvedFfmpeg, ttsArgs, verbose);
             Console.WriteLine($"Done -> {output}");
             
             if (autoplay)
@@ -666,11 +674,14 @@ internal static class Program
         }
     }
 
-    private static void RunFfmpeg(string ffmpegPath, IEnumerable<string> args)
+    private static void RunFfmpeg(string ffmpegPath, IEnumerable<string> args, bool verbose)
     {
         var argList = args.ToList();
-        Console.WriteLine("Running ffmpeg:");
-        Console.WriteLine($"\"{ffmpegPath}\" {string.Join(" ", argList.Select(QuoteIfNeeded))}");
+        if (verbose)
+        {
+            Console.WriteLine("Running ffmpeg:");
+            Console.WriteLine($"\"{ffmpegPath}\" {string.Join(" ", argList.Select(QuoteIfNeeded))}");
+        }
 
         var startInfo = new ProcessStartInfo
         {
