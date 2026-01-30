@@ -12,6 +12,9 @@
     "order": ["preflight", "test", "problems", "bump", "commit", "tag", "push"],
     "requireApproval": ["push"]
   },
+  "testing": {
+    "command": "dotnet test --verbosity minimal"
+  },
   "versioning": {
     "scheme": "semver",
     "patchEveryShip": true,

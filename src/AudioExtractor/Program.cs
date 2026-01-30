@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace AudioExtractor;
 
-internal static class Program
+public static class Program
 {
     private const int DefaultTtsSampleRate = 24000;
     private const int DefaultTtsHighpassHz = 80;
@@ -95,7 +95,7 @@ internal static class Program
         Console.WriteLine("  audio-extractor Lockdown.mp4 --start 00:01:00 --end 00:01:20");
     }
 
-    private static Options ParseArgs(string[] args)
+    internal static Options ParseArgs(string[] args)
     {
         if (args.Length == 0)
         {
@@ -224,7 +224,7 @@ internal static class Program
         return value;
     }
 
-    private sealed class Options
+    internal sealed class Options
     {
         public string? InputFile { get; init; }
         public string? Output { get; set; }
@@ -402,7 +402,7 @@ internal static class Program
         }
     }
 
-    private static double? ConvertToSeconds(string? timeText)
+    internal static double? ConvertToSeconds(string? timeText)
     {
         if (string.IsNullOrWhiteSpace(timeText))
         {
@@ -458,7 +458,7 @@ internal static class Program
         return value;
     }
 
-    private static string BuildAutoOutputName(
+    internal static string BuildAutoOutputName(
         string inputPath,
         bool isNoTts,
         string? start,
@@ -494,7 +494,7 @@ internal static class Program
         return Path.Combine(dir, $"{baseName}{mode}{tag}.wav");
     }
 
-    private static string ToFileTimeToken(string timeText)
+    internal static string ToFileTimeToken(string timeText)
     {
         return timeText.Trim().Replace(":", "-").Replace(" ", string.Empty);
     }

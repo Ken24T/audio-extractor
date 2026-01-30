@@ -4,9 +4,13 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>0.2.4</Version>
+    <Version>0.3.0</Version>
     <AssemblyName>audio-extractor</AssemblyName>
     <RootNamespace>AudioExtractor</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="AudioExtractor.Tests" />
+  </ItemGroup>
 
 </Project>
