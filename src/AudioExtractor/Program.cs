@@ -730,7 +730,6 @@ internal static class Program
                 UseShellExecute = true
             };
             Process.Start(startInfo);
-            Console.WriteLine("Opened in default app.");
         }
         catch (Exception ex)
         {
