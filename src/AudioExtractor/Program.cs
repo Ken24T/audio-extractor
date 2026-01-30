@@ -1,4 +1,3 @@
-using System.CommandLine;
 using System.Diagnostics;
 
 namespace AudioExtractor;
@@ -10,146 +9,223 @@ internal static class Program
     private const int DefaultTtsLowpassHz = 11000;
     private const int DefaultTargetLufs = -16;
 
-    public static async Task<int> Main(string[] args)
+    public static Task<int> Main(string[] args)
     {
-        var inputArg = new Argument<string>("inputFile")
+        try
         {
-            Arity = ArgumentArity.ExactlyOne,
-            Description = "Input media file"
-        };
-
-        var outputOption = new Option<string?>(
-            new[] { "--output", "-o", "-Output" },
-            "Output filename (auto if omitted)");
-
-        var startOption = new Option<string?>(
-            new[] { "--start", "-Start" },
-            "Start time (HH:MM:SS | MM:SS | SS)");
-
-        var endOption = new Option<string?>(
-            new[] { "--end", "-End" },
-            "End time (requires --start)");
-
-        var durationOption = new Option<string?>(
-            new[] { "--duration", "-Duration" },
-            "Duration (requires --start)");
-
-        var sampleRateOption = new Option<int?>(
-            new[] { "--sample-rate", "-SampleRate" },
-            "Sample rate for --no-tts mode");
-
-        var channelsOption = new Option<int?>(
-            new[] { "--channels", "-Channels" },
-            "Channels for --no-tts mode (1 or 2)");
-
-        var ffmpegPathOption = new Option<string?>(
-            new[] { "--ffmpeg-path", "-FfmpegPath" },
-            "Path to ffmpeg.exe");
-
-        var noTtsOption = new Option<bool>(
-            new[] { "--no-tts", "-NoTTS" },
-            "Preserve original format");
-
-        var ttsSampleRateOption = new Option<int>(
-            "--tts-sample-rate",
-            getDefaultValue: () => DefaultTtsSampleRate,
-            description: "TTS sample rate (default 24000)");
-
-        var ttsHighpassOption = new Option<int>(
-            "--tts-highpass-hz",
-            getDefaultValue: () => DefaultTtsHighpassHz,
-            description: "High-pass filter cutoff (default 80)");
-
-        var ttsLowpassOption = new Option<int>(
-            "--tts-lowpass-hz",
-            getDefaultValue: () => DefaultTtsLowpassHz,
-            description: "Low-pass filter cutoff (default 11000)");
-
-        var targetLufsOption = new Option<int>(
-            "--target-lufs",
-            getDefaultValue: () => DefaultTargetLufs,
-            description: "Target loudness (default -16 LUFS)");
-
-        var forceOption = new Option<bool>(
-            new[] { "--force", "-Force" },
-            "Overwrite output file");
-
-        var root = new RootCommand("Audio extraction using ffmpeg (Qwen3-friendly defaults)")
-        {
-            inputArg,
-            outputOption,
-            startOption,
-            endOption,
-            durationOption,
-            sampleRateOption,
-            channelsOption,
-            ffmpegPathOption,
-            noTtsOption,
-            ttsSampleRateOption,
-            ttsHighpassOption,
-            ttsLowpassOption,
-            targetLufsOption,
-            forceOption
-        };
-
-        root.AddValidator(result =>
-        {
-            var channels = result.GetValueForOption(channelsOption);
-            if (channels is not null && channels is not (1 or 2))
+            var options = ParseArgs(args);
+            if (options.ShowHelp)
             {
-                result.ErrorMessage = "Channels must be 1 or 2.";
+                ShowHelp();
+                return Task.FromResult(0);
             }
-        });
 
-        root.SetHandler((
-            string inputFile,
-            string? output,
-            string? start,
-            string? end,
-            string? duration,
-            int? sampleRate,
-            int? channels,
-            string? ffmpegPath,
-            bool noTts,
-            int ttsSampleRate,
-            int ttsHighpassHz,
-            int ttsLowpassHz,
-            int targetLufs,
-            bool force
-        ) =>
+            if (string.IsNullOrWhiteSpace(options.InputFile))
+            {
+                ShowHelp();
+                return Task.FromResult(1);
+            }
+
+            if (options.Channels is not null && options.Channels is not (1 or 2))
+            {
+                return Task.FromResult(Fail("Channels must be 1 or 2."));
+            }
+
+            var exitCode = Run(
+                options.InputFile,
+                options.Output,
+                options.Start,
+                options.End,
+                options.Duration,
+                options.SampleRate,
+                options.Channels,
+                options.FfmpegPath,
+                options.NoTts,
+                options.TtsSampleRate,
+                options.TtsHighpassHz,
+                options.TtsLowpassHz,
+                options.TargetLufs,
+                options.Force);
+
+            return Task.FromResult(exitCode);
+        }
+        catch (ArgumentException ex)
         {
-            Environment.ExitCode = Run(
-                inputFile,
-                output,
-                start,
-                end,
-                duration,
-                sampleRate,
-                channels,
-                ffmpegPath,
-                noTts,
-                ttsSampleRate,
-                ttsHighpassHz,
-                ttsLowpassHz,
-                targetLufs,
-                force);
-        },
-            inputArg,
-            outputOption,
-            startOption,
-            endOption,
-            durationOption,
-            sampleRateOption,
-            channelsOption,
-            ffmpegPathOption,
-            noTtsOption,
-            ttsSampleRateOption,
-            ttsHighpassOption,
-            ttsLowpassOption,
-            targetLufsOption,
-            forceOption);
+            return Task.FromResult(Fail(ex.Message));
+        }
+    }
 
-        return await root.InvokeAsync(args);
+    private static void ShowHelp()
+    {
+        Console.WriteLine("audio-extractor - Extract audio using ffmpeg");
+        Console.WriteLine();
+        Console.WriteLine("DEFAULT: Qwen3-friendly WAV (mono, 24kHz, speech filtered, loudnorm)");
+        Console.WriteLine();
+        Console.WriteLine("USAGE:");
+        Console.WriteLine("  audio-extractor <inputFile> [options]");
+        Console.WriteLine();
+        Console.WriteLine("OPTIONS:");
+        Console.WriteLine("  --start <time>           HH:MM:SS | MM:SS | SS");
+        Console.WriteLine("  --end <time>             Requires --start");
+        Console.WriteLine("  --duration <time>        Requires --start");
+        Console.WriteLine();
+        Console.WriteLine("  --output <file>          Output filename (auto if omitted)");
+        Console.WriteLine("  --no-tts                 Preserve original format");
+        Console.WriteLine("  --force                  Overwrite output file");
+        Console.WriteLine("  --ffmpeg-path <path>     Path to ffmpeg.exe");
+        Console.WriteLine();
+        Console.WriteLine("  --sample-rate <int>      Only in --no-tts mode");
+        Console.WriteLine("  --channels <1|2>         Only in --no-tts mode");
+        Console.WriteLine();
+        Console.WriteLine($"  --tts-sample-rate <int>  Default {DefaultTtsSampleRate}");
+        Console.WriteLine($"  --tts-highpass-hz <int>  Default {DefaultTtsHighpassHz}");
+        Console.WriteLine($"  --tts-lowpass-hz <int>   Default {DefaultTtsLowpassHz}");
+        Console.WriteLine($"  --target-lufs <int>      Default {DefaultTargetLufs}");
+        Console.WriteLine();
+        Console.WriteLine("EXAMPLES:");
+        Console.WriteLine("  audio-extractor Lockdown.mp4");
+        Console.WriteLine("  audio-extractor Lockdown.mp4 --start 00:01:00 --duration 00:00:20");
+        Console.WriteLine("  audio-extractor Lockdown.mp4 --start 00:01:00 --end 00:01:20");
+    }
+
+    private static Options ParseArgs(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            return Options.WithHelp();
+        }
+
+        if (IsHelpToken(args[0]))
+        {
+            return Options.WithHelp();
+        }
+
+        var options = new Options
+        {
+            InputFile = args[0],
+            TtsSampleRate = DefaultTtsSampleRate,
+            TtsHighpassHz = DefaultTtsHighpassHz,
+            TtsLowpassHz = DefaultTtsLowpassHz,
+            TargetLufs = DefaultTargetLufs
+        };
+
+        var i = 1;
+        while (i < args.Length)
+        {
+            var token = args[i];
+            if (IsHelpToken(token))
+            {
+                return Options.WithHelp();
+            }
+
+            switch (token)
+            {
+                case "--output":
+                case "-o":
+                case "-Output":
+                    options.Output = ReadValue(args, ref i, token);
+                    break;
+                case "--start":
+                case "-Start":
+                    options.Start = ReadValue(args, ref i, token);
+                    break;
+                case "--end":
+                case "-End":
+                    options.End = ReadValue(args, ref i, token);
+                    break;
+                case "--duration":
+                case "-Duration":
+                    options.Duration = ReadValue(args, ref i, token);
+                    break;
+                case "--sample-rate":
+                case "-SampleRate":
+                    options.SampleRate = ReadInt(args, ref i, token);
+                    break;
+                case "--channels":
+                case "-Channels":
+                    options.Channels = ReadInt(args, ref i, token);
+                    break;
+                case "--ffmpeg-path":
+                case "-FfmpegPath":
+                    options.FfmpegPath = ReadValue(args, ref i, token);
+                    break;
+                case "--no-tts":
+                case "-NoTTS":
+                    options.NoTts = true;
+                    i++;
+                    break;
+                case "--force":
+                case "-Force":
+                    options.Force = true;
+                    i++;
+                    break;
+                case "--tts-sample-rate":
+                    options.TtsSampleRate = ReadInt(args, ref i, token);
+                    break;
+                case "--tts-highpass-hz":
+                    options.TtsHighpassHz = ReadInt(args, ref i, token);
+                    break;
+                case "--tts-lowpass-hz":
+                    options.TtsLowpassHz = ReadInt(args, ref i, token);
+                    break;
+                case "--target-lufs":
+                    options.TargetLufs = ReadInt(args, ref i, token);
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown option: {token}");
+            }
+        }
+
+        return options;
+    }
+
+    private static bool IsHelpToken(string token)
+    {
+        return token is "--help" or "-h" or "/?" or "-?";
+    }
+
+    private static string ReadValue(string[] args, ref int index, string optionName)
+    {
+        if (index + 1 >= args.Length)
+        {
+            throw new ArgumentException($"Missing value for {optionName}.");
+        }
+
+        var value = args[index + 1];
+        index += 2;
+        return value;
+    }
+
+    private static int ReadInt(string[] args, ref int index, string optionName)
+    {
+        var raw = ReadValue(args, ref index, optionName);
+        if (!int.TryParse(raw, out var value))
+        {
+            throw new ArgumentException($"Invalid integer for {optionName}: {raw}");
+        }
+
+        return value;
+    }
+
+    private sealed class Options
+    {
+        public string? InputFile { get; init; }
+        public string? Output { get; set; }
+        public string? Start { get; set; }
+        public string? End { get; set; }
+        public string? Duration { get; set; }
+        public int? SampleRate { get; set; }
+        public int? Channels { get; set; }
+        public string? FfmpegPath { get; set; }
+        public bool NoTts { get; set; }
+        public int TtsSampleRate { get; set; }
+        public int TtsHighpassHz { get; set; }
+        public int TtsLowpassHz { get; set; }
+        public int TargetLufs { get; set; }
+        public bool Force { get; set; }
+        public bool ShowHelp { get; set; }
+
+        public static Options WithHelp() => new() { ShowHelp = true };
     }
 
     private static int Run(
