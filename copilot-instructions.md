@@ -60,4 +60,4 @@ dotnet publish -c Release -r win-x64 --self-contained false /p:PublishSingleFile
 
 ## Shipping Workflow
 
-Follow the SHIP/TCTBP process in [TCTBP Agent.md](TCTBP%20Agent.md).
+Follow the SHIP/TCTBP process in [TCTBP Agent.md](TCTBP Agent.md).
