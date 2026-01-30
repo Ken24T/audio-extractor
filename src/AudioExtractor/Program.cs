@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 
 namespace AudioExtractor;
 
@@ -81,6 +82,10 @@ internal static class Program
         Console.WriteLine($"  --tts-highpass-hz <int>  Default {DefaultTtsHighpassHz}");
         Console.WriteLine($"  --tts-lowpass-hz <int>   Default {DefaultTtsLowpassHz}");
         Console.WriteLine($"  --target-lufs <int>      Default {DefaultTargetLufs}");
+        Console.WriteLine();
+        Console.WriteLine("NOTE:");
+        Console.WriteLine("  ffmpeg is required on PATH (or use --ffmpeg-path).");
+        Console.WriteLine("  If ffprobe is available, input duration guards are enforced.");
         Console.WriteLine();
         Console.WriteLine("EXAMPLES:");
         Console.WriteLine("  audio-extractor Lockdown.mp4");
@@ -275,6 +280,28 @@ internal static class Program
                 return Fail($"End time ({end}) must be AFTER Start time ({start}).");
             }
 
+            var mediaDuration = TryGetMediaDurationSeconds(inputFile, ffmpegPath);
+            if (mediaDuration is not null)
+            {
+                const double epsilon = 0.0001;
+                var total = mediaDuration.Value;
+
+                if (startSec is not null && startSec.Value - total > epsilon)
+                {
+                    return Fail("Start time exceeds input duration.");
+                }
+
+                if (endSec is not null && endSec.Value - total > epsilon)
+                {
+                    return Fail("End time exceeds input duration.");
+                }
+
+                if (durationSec is not null && startSec is not null && (startSec.Value + durationSec.Value) - total > epsilon)
+                {
+                    return Fail("Start time + duration exceeds input duration.");
+                }
+            }
+
             if (string.IsNullOrWhiteSpace(output))
             {
                 output = BuildAutoOutputName(inputFile, noTts, start, end, duration);
@@ -347,7 +374,7 @@ internal static class Program
         }
     }
 
-    private static int? ConvertToSeconds(string? timeText)
+    private static double? ConvertToSeconds(string? timeText)
     {
         if (string.IsNullOrWhiteSpace(timeText))
         {
@@ -360,26 +387,47 @@ internal static class Program
             throw new ArgumentException($"Invalid time format: {timeText} (use SS, MM:SS, or HH:MM:SS)");
         }
 
-        var numbers = parts.Select(part =>
-        {
-            if (!int.TryParse(part, out var value))
-            {
-                throw new ArgumentException($"Invalid time format: {timeText}");
-            }
+        double seconds;
+        int minutes = 0;
+        int hours = 0;
 
-            return value;
-        }).ToList();
-
-        while (numbers.Count < 3)
+        if (parts.Length == 1)
         {
-            numbers.Insert(0, 0);
+            seconds = ParseSecondsPart(parts[0], timeText);
+        }
+        else if (parts.Length == 2)
+        {
+            minutes = ParseIntPart(parts[0], timeText);
+            seconds = ParseSecondsPart(parts[1], timeText);
+        }
+        else
+        {
+            hours = ParseIntPart(parts[0], timeText);
+            minutes = ParseIntPart(parts[1], timeText);
+            seconds = ParseSecondsPart(parts[2], timeText);
         }
 
-        var hours = numbers[0];
-        var minutes = numbers[1];
-        var seconds = numbers[2];
-
         return (hours * 3600) + (minutes * 60) + seconds;
+    }
+
+    private static int ParseIntPart(string part, string originalText)
+    {
+        if (!int.TryParse(part, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+        {
+            throw new ArgumentException($"Invalid time format: {originalText}");
+        }
+
+        return value;
+    }
+
+    private static double ParseSecondsPart(string part, string originalText)
+    {
+        if (!double.TryParse(part, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var value))
+        {
+            throw new ArgumentException($"Invalid time format: {originalText}");
+        }
+
+        return value;
     }
 
     private static string BuildAutoOutputName(
@@ -466,6 +514,84 @@ internal static class Program
         return "ffmpeg";
     }
 
+    private static double? TryGetMediaDurationSeconds(string inputFile, string? providedFfmpegPath)
+    {
+        var ffprobePath = ResolveFfprobePath(providedFfmpegPath);
+        if (string.IsNullOrWhiteSpace(ffprobePath))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = ffprobePath,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.StartInfo.ArgumentList.Add("-v");
+            process.StartInfo.ArgumentList.Add("error");
+            process.StartInfo.ArgumentList.Add("-show_entries");
+            process.StartInfo.ArgumentList.Add("format=duration");
+            process.StartInfo.ArgumentList.Add("-of");
+            process.StartInfo.ArgumentList.Add("default=noprint_wrappers=1:nokey=1");
+            process.StartInfo.ArgumentList.Add(inputFile);
+
+            process.Start();
+            var output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit();
+
+            if (process.ExitCode != 0)
+            {
+                return null;
+            }
+
+            if (double.TryParse(output.Trim(), NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var duration))
+            {
+                return duration;
+            }
+
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string? ResolveFfprobePath(string? providedFfmpegPath)
+    {
+        if (!string.IsNullOrWhiteSpace(providedFfmpegPath))
+        {
+            try
+            {
+                var ffmpegFull = Path.GetFullPath(providedFfmpegPath);
+                var ffmpegDir = Path.GetDirectoryName(ffmpegFull);
+                if (!string.IsNullOrWhiteSpace(ffmpegDir))
+                {
+                    var candidate = Path.Combine(ffmpegDir, "ffprobe.exe");
+                    if (File.Exists(candidate))
+                    {
+                        return candidate;
+                    }
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        return IsFfprobeOnPath() ? "ffprobe" : null;
+    }
+
     private static bool IsFfmpegOnPath()
     {
         try
@@ -476,6 +602,33 @@ internal static class Program
                 {
                     FileName = "where",
                     Arguments = "ffmpeg",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            process.WaitForExit();
+            return process.ExitCode == 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool IsFfprobeOnPath()
+    {
+        try
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "where",
+                    Arguments = "ffprobe",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
