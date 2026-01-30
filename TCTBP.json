@@ -21,5 +21,9 @@
   "tagging": {
     "policy": "everyCommit",
     "format": "{version}"
+  },
+  "deployment": {
+    "enabled": true,
+    "path": "E:\\1D\\z - Scripts"
   }
 }
