@@ -35,7 +35,7 @@ dotnet run --project .\src\AudioExtractor -- <inputFile> [options]
 
 ## Usage
 
-```
+```text
 audio-extractor <inputFile> [options]
 
 Options:

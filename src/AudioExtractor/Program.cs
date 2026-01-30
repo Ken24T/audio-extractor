@@ -46,7 +46,8 @@ internal static class Program
                 options.TtsHighpassHz,
                 options.TtsLowpassHz,
                 options.TargetLufs,
-                options.Force);
+                options.Force,
+                options.Autoplay);
 
             return Task.FromResult(exitCode);
         }
@@ -164,6 +165,11 @@ internal static class Program
                     options.Force = true;
                     i++;
                     break;
+                case "--autoplay":
+                case "-Autoplay":
+                    options.Autoplay = true;
+                    i++;
+                    break;
                 case "--tts-sample-rate":
                     options.TtsSampleRate = ReadInt(args, ref i, token);
                     break;
@@ -228,6 +234,7 @@ internal static class Program
         public int TtsLowpassHz { get; set; }
         public int TargetLufs { get; set; }
         public bool Force { get; set; }
+        public bool Autoplay { get; set; }
         public bool ShowHelp { get; set; }
 
         public static Options WithHelp() => new() { ShowHelp = true };
@@ -247,7 +254,8 @@ internal static class Program
         int ttsHighpassHz,
         int ttsLowpassHz,
         int targetLufs,
-        bool force)
+        bool force,
+        bool autoplay)
     {
         try
         {
@@ -331,10 +339,10 @@ internal static class Program
             {
                 baseArgs.AddRange(new[] { "-t", duration });
             }
-
-            if (!string.IsNullOrWhiteSpace(end))
+            else if (!string.IsNullOrWhiteSpace(end) && startSec.HasValue && endSec.HasValue)
             {
-                baseArgs.AddRange(new[] { "-to", end });
+                var calculatedDuration = endSec.Value - startSec.Value;
+                baseArgs.AddRange(new[] { "-t", calculatedDuration.ToString("F3", CultureInfo.InvariantCulture) });
             }
 
             var wavArgs = new List<string> { "-vn", "-c:a", "pcm_s16le" };
@@ -354,6 +362,12 @@ internal static class Program
 
                 RunFfmpeg(resolvedFfmpeg, baseArgs.Concat(wavArgs).Concat(outArgs));
                 Console.WriteLine($"Done -> {output}");
+                
+                if (autoplay)
+                {
+                    OpenFileInDefaultApp(output);
+                }
+                
                 return 0;
             }
 
@@ -366,6 +380,12 @@ internal static class Program
 
             RunFfmpeg(resolvedFfmpeg, ttsArgs);
             Console.WriteLine($"Done -> {output}");
+            
+            if (autoplay)
+            {
+                OpenFileInDefaultApp(output);
+            }
+            
             return 0;
         }
         catch (Exception ex)
@@ -687,6 +707,26 @@ internal static class Program
         }
 
         return value;
+    }
+
+    private static void OpenFileInDefaultApp(string filePath)
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = filePath,
+                UseShellExecute = true
+            };
+            Process.Start(startInfo);
+            Console.WriteLine("Opened in default app.");
+        }
+        catch (Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Error.WriteLine($"Warning: Could not open file in default app: {ex.Message}");
+            Console.ResetColor();
+        }
     }
 
     private static int Fail(string message, int code = 2)
