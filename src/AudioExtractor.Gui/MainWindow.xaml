@@ -9,6 +9,7 @@
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
       <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
 
     <Menu Grid.Row="0" Margin="0,0,0,8">
@@ -159,5 +160,14 @@
       <Button Name="RunButton" Content="Run" Width="120" Height="32" Margin="0,0,8,0" Click="OnRun" />
       <Button Name="ClearButton" Content="Clear Log" Width="120" Height="32" Click="OnClearLog" />
     </StackPanel>
+
+    <StatusBar Grid.Row="4" Margin="0,8,0,0">
+      <StatusBarItem>
+        <TextBlock Name="StatusTextBlock" Text="Ready" />
+      </StatusBarItem>
+      <StatusBarItem HorizontalAlignment="Right">
+        <ProgressBar Name="StatusProgressBar" Width="160" Height="14" IsIndeterminate="True" Visibility="Collapsed" />
+      </StatusBarItem>
+    </StatusBar>
   </Grid>
 </Window>

@@ -426,7 +426,9 @@ public sealed class AudioExtractionService
             FileName = ffmpegPath,
             UseShellExecute = false,
             RedirectStandardOutput = false,
-            RedirectStandardError = false
+            RedirectStandardError = false,
+            CreateNoWindow = true,
+            WindowStyle = ProcessWindowStyle.Hidden
         };
 
         foreach (var arg in argList)

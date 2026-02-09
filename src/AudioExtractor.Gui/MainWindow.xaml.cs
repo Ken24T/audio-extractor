@@ -19,6 +19,7 @@ public partial class MainWindow : Window
         TtsHighpassTextBox.Text = ExtractionDefaults.TtsHighpassHz.ToString();
         TtsLowpassTextBox.Text = ExtractionDefaults.TtsLowpassHz.ToString();
         TargetLufsTextBox.Text = ExtractionDefaults.TargetLufs.ToString();
+        SetStatus("Ready", isBusy: false);
     }
 
     private void OnInputChanged(object sender, RoutedEventArgs e)
@@ -139,6 +140,7 @@ public partial class MainWindow : Window
         }
 
         RunButton.IsEnabled = false;
+        SetStatus("Running extraction...", isBusy: true);
         var reporter = new UiReporter(this);
         var options = new ExtractionOptions
         {
@@ -160,18 +162,25 @@ public partial class MainWindow : Window
             Verbose = VerboseCheckBox.IsChecked == true
         };
 
-        var result = await Task.Run(() => _service.Run(options, reporter));
-
-        if (!result.Success)
+        try
         {
-            MessageBox.Show(this, result.Error ?? "Extraction failed.", "Audio Extractor", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-        else
-        {
-            LogTextBox.AppendText("Extraction complete.\n");
-        }
+            var result = await Task.Run(() => _service.Run(options, reporter));
 
-        RunButton.IsEnabled = true;
+            if (!result.Success)
+            {
+                SetStatus("Extraction failed.", isBusy: false);
+                MessageBox.Show(this, result.Error ?? "Extraction failed.", "Audio Extractor", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            else
+            {
+                LogTextBox.AppendText("Extraction complete.\n");
+                SetStatus("Extraction complete.", isBusy: false);
+            }
+        }
+        finally
+        {
+            RunButton.IsEnabled = true;
+        }
     }
 
     private void OnClearLog(object sender, RoutedEventArgs e)
@@ -182,6 +191,13 @@ public partial class MainWindow : Window
     private void ClearLog()
     {
         LogTextBox.Clear();
+    }
+
+    private void SetStatus(string message, bool isBusy)
+    {
+        StatusTextBlock.Text = message;
+        StatusProgressBar.Visibility = isBusy ? Visibility.Visible : Visibility.Collapsed;
+        StatusProgressBar.IsIndeterminate = isBusy;
     }
 
     private static string? BuildTimeValue(IntegerUpDown hours, IntegerUpDown minutes, IntegerUpDown seconds)
