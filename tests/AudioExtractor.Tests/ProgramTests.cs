@@ -1,4 +1,5 @@
 using AudioExtractor;
+using AudioExtractor.Core;
 using Xunit;
 
 namespace AudioExtractor.Tests;
@@ -16,7 +17,7 @@ public class TimeParsingTests
     [InlineData("0:0:10.123", 10.123)]
     public void ConvertToSeconds_ValidFormats_ReturnsCorrectSeconds(string input, double expected)
     {
-        var result = Program.ConvertToSeconds(input);
+        var result = AudioExtractionUtils.ConvertToSeconds(input);
         
         Assert.NotNull(result);
         Assert.Equal(expected, result.Value, precision: 3);
@@ -28,7 +29,7 @@ public class TimeParsingTests
     [InlineData("   ")]
     public void ConvertToSeconds_NullOrWhitespace_ReturnsNull(string? input)
     {
-        var result = Program.ConvertToSeconds(input);
+        var result = AudioExtractionUtils.ConvertToSeconds(input);
         
         Assert.Null(result);
     }
@@ -40,7 +41,7 @@ public class TimeParsingTests
     [InlineData("1.5:30")]
     public void ConvertToSeconds_InvalidFormats_ThrowsArgumentException(string input)
     {
-        Assert.Throws<ArgumentException>(() => Program.ConvertToSeconds(input));
+        Assert.Throws<ArgumentException>(() => AudioExtractionUtils.ConvertToSeconds(input));
     }
 
     [Theory]
@@ -50,7 +51,7 @@ public class TimeParsingTests
     [InlineData("01:30", "01-30")]
     public void ToFileTimeToken_ValidInput_ReturnsFormattedToken(string input, string expected)
     {
-        var result = Program.ToFileTimeToken(input);
+        var result = AudioExtractionUtils.ToFileTimeToken(input);
         
         Assert.Equal(expected, result);
     }
@@ -61,7 +62,7 @@ public class FileNamingTests
     [Fact]
     public void BuildAutoOutputName_NoTtsMode_GeneratesCorrectName()
     {
-        var result = Program.BuildAutoOutputName("test.mp4", isNoTts: true, null, null, null);
+        var result = AudioExtractionUtils.BuildAutoOutputName("test.mp4", isNoTts: true, null, null, null);
         
         Assert.EndsWith("_out.wav", result);
         Assert.Contains("test", result);
@@ -70,7 +71,7 @@ public class FileNamingTests
     [Fact]
     public void BuildAutoOutputName_TtsMode_GeneratesCorrectName()
     {
-        var result = Program.BuildAutoOutputName("test.mp4", isNoTts: false, null, null, null);
+        var result = AudioExtractionUtils.BuildAutoOutputName("test.mp4", isNoTts: false, null, null, null);
         
         Assert.EndsWith("_tts.wav", result);
         Assert.Contains("test", result);
@@ -79,7 +80,7 @@ public class FileNamingTests
     [Fact]
     public void BuildAutoOutputName_WithStartTime_IncludesStartToken()
     {
-        var result = Program.BuildAutoOutputName("test.mp4", false, "00:01:00", null, null);
+        var result = AudioExtractionUtils.BuildAutoOutputName("test.mp4", false, "00:01:00", null, null);
         
         Assert.Contains("_s00-01-00", result);
     }
@@ -87,7 +88,7 @@ public class FileNamingTests
     [Fact]
     public void BuildAutoOutputName_WithEndTime_IncludesEndToken()
     {
-        var result = Program.BuildAutoOutputName("test.mp4", false, "00:01:00", "00:02:00", null);
+        var result = AudioExtractionUtils.BuildAutoOutputName("test.mp4", false, "00:01:00", "00:02:00", null);
         
         Assert.Contains("_s00-01-00", result);
         Assert.Contains("_e00-02-00", result);
@@ -96,7 +97,7 @@ public class FileNamingTests
     [Fact]
     public void BuildAutoOutputName_WithDuration_IncludesDurationToken()
     {
-        var result = Program.BuildAutoOutputName("test.mp4", false, "00:01:00", null, "00:00:30");
+        var result = AudioExtractionUtils.BuildAutoOutputName("test.mp4", false, "00:01:00", null, "00:00:30");
         
         Assert.Contains("_s00-01-00", result);
         Assert.Contains("_d00-00-30", result);
@@ -105,7 +106,7 @@ public class FileNamingTests
     [Fact]
     public void BuildAutoOutputName_WithFullPath_PreservesDirectory()
     {
-        var result = Program.BuildAutoOutputName(@"C:\Videos\test.mp4", false, null, null, null);
+        var result = AudioExtractionUtils.BuildAutoOutputName(@"C:\Videos\test.mp4", false, null, null, null);
         
         Assert.StartsWith(@"C:\Videos\", result);
     }
@@ -113,7 +114,7 @@ public class FileNamingTests
     [Fact]
     public void BuildAutoOutputName_NoDirectory_UsesCurrentDirectory()
     {
-        var result = Program.BuildAutoOutputName("test.mp4", false, null, null, null);
+        var result = AudioExtractionUtils.BuildAutoOutputName("test.mp4", false, null, null, null);
         
         Assert.Contains("test", result);
         Assert.EndsWith(".wav", result);

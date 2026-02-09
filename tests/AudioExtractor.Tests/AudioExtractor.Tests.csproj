@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\AudioExtractor.Core\AudioExtractor.Core.csproj" />
     <ProjectReference Include="..\..\src\AudioExtractor\AudioExtractor.csproj" />
   </ItemGroup>
 </Project>
