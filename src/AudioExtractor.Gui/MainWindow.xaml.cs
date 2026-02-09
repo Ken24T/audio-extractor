@@ -1,4 +1,7 @@
 using System.Windows;
+using MessageBox = System.Windows.MessageBox;
+using System.IO;
+using Xceed.Wpf.Toolkit;
 using Microsoft.Win32;
 using AudioExtractor.Core;
 
@@ -7,6 +10,7 @@ namespace AudioExtractor.Gui;
 public partial class MainWindow : Window
 {
     private readonly AudioExtractionService _service = new();
+    private string? _ffmpegPath;
 
     public MainWindow()
     {
@@ -15,6 +19,19 @@ public partial class MainWindow : Window
         TtsHighpassTextBox.Text = ExtractionDefaults.TtsHighpassHz.ToString();
         TtsLowpassTextBox.Text = ExtractionDefaults.TtsLowpassHz.ToString();
         TargetLufsTextBox.Text = ExtractionDefaults.TargetLufs.ToString();
+    }
+
+    private void OnInputChanged(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(InputTextBox.Text))
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(OutputTextBox.Text))
+        {
+            OutputTextBox.Text = BuildDefaultOutputPath(InputTextBox.Text);
+        }
     }
 
     private void OnBrowseInput(object sender, RoutedEventArgs e)
@@ -28,6 +45,10 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog(this) == true)
         {
             InputTextBox.Text = dialog.FileName;
+            if (string.IsNullOrWhiteSpace(OutputTextBox.Text))
+            {
+                OutputTextBox.Text = BuildDefaultOutputPath(dialog.FileName);
+            }
         }
     }
 
@@ -45,18 +66,31 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OnBrowseFfmpeg(object sender, RoutedEventArgs e)
+    private void OnEditSettings(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFileDialog
+        var dialog = new SettingsWindow(_ffmpegPath) { Owner = this };
+        if (dialog.ShowDialog() == true)
         {
-            Title = "Select ffmpeg.exe",
-            Filter = "ffmpeg.exe|ffmpeg.exe|All files|*.*"
-        };
-
-        if (dialog.ShowDialog(this) == true)
-        {
-            FfmpegTextBox.Text = dialog.FileName;
+            _ffmpegPath = dialog.FfmpegPath;
+            if (!string.IsNullOrWhiteSpace(_ffmpegPath))
+            {
+                LogTextBox.AppendText($"ffmpeg path set to: {_ffmpegPath}{Environment.NewLine}");
+            }
+            else
+            {
+                LogTextBox.AppendText("ffmpeg path cleared; using PATH.\n");
+            }
         }
+    }
+
+    private void OnExit(object sender, RoutedEventArgs e)
+    {
+        Close();
+    }
+
+    private void OnAbout(object sender, RoutedEventArgs e)
+    {
+        MessageBox.Show(this, "Audio Extractor\nWPF GUI", "About", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private async void OnRun(object sender, RoutedEventArgs e)
@@ -67,6 +101,11 @@ public partial class MainWindow : Window
         {
             MessageBox.Show(this, "Input file is required.", "Audio Extractor", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
+        }
+
+        if (string.IsNullOrWhiteSpace(OutputTextBox.Text))
+        {
+            OutputTextBox.Text = BuildDefaultOutputPath(InputTextBox.Text);
         }
 
         if (!TryReadOptionalInt(SampleRateTextBox.Text, "Sample Rate", out var sampleRate))
@@ -105,12 +144,12 @@ public partial class MainWindow : Window
         {
             InputFile = InputTextBox.Text.Trim(),
             Output = NormalizeOptional(OutputTextBox.Text),
-            Start = NormalizeOptional(StartTextBox.Text),
-            End = NormalizeOptional(EndTextBox.Text),
-            Duration = NormalizeOptional(DurationTextBox.Text),
+            Start = BuildTimeValue(StartHours, StartMinutes, StartSeconds),
+            End = BuildTimeValue(EndHours, EndMinutes, EndSeconds),
+            Duration = BuildTimeValue(DurationHours, DurationMinutes, DurationSeconds),
             SampleRate = sampleRate,
             Channels = channels,
-            FfmpegPath = NormalizeOptional(FfmpegTextBox.Text),
+            FfmpegPath = NormalizeOptional(_ffmpegPath),
             NoTts = NoTtsCheckBox.IsChecked == true,
             TtsSampleRate = ttsSampleRate,
             TtsHighpassHz = ttsHighpass,
@@ -129,7 +168,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            MessageBox.Show(this, "Extraction complete.", "Audio Extractor", MessageBoxButton.OK, MessageBoxImage.Information);
+            LogTextBox.AppendText("Extraction complete.\n");
         }
 
         RunButton.IsEnabled = true;
@@ -145,9 +184,29 @@ public partial class MainWindow : Window
         LogTextBox.Clear();
     }
 
+    private static string? BuildTimeValue(IntegerUpDown hours, IntegerUpDown minutes, IntegerUpDown seconds)
+    {
+        if (hours.Value is null && minutes.Value is null && seconds.Value is null)
+        {
+            return null;
+        }
+
+        var h = hours.Value ?? 0;
+        var m = minutes.Value ?? 0;
+        var s = seconds.Value ?? 0;
+        return $"{h:00}:{m:00}:{s:00}";
+    }
+
     private string? NormalizeOptional(string? text)
     {
         return string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+    }
+
+    private static string BuildDefaultOutputPath(string inputPath)
+    {
+        var directory = Path.GetDirectoryName(inputPath) ?? ".";
+        var fileName = Path.GetFileNameWithoutExtension(inputPath);
+        return Path.Combine(directory, $"{fileName}.wav");
     }
 
     private bool TryReadOptionalInt(string? text, string label, out int? value)
