@@ -2,7 +2,7 @@
 
 ## Overview
 
-Audio Extractor is a Windows command-line tool that extracts and processes audio from media files using ffmpeg. It's optimized for creating high-quality reference audio samples for Qwen3-TTS (text-to-speech) applications.
+Audio Extractor is a Windows CLI and GUI tool that extracts and processes audio from media files using ffmpeg. It's optimized for creating high-quality reference audio samples for Qwen3-TTS (text-to-speech) applications.
 
 ## Requirements
 
@@ -16,6 +16,20 @@ Audio Extractor is a Windows command-line tool that extracts and processes audio
 2. Ensure ffmpeg is installed:
    - Download from [ffmpeg.org](https://ffmpeg.org/download.html)
    - Add ffmpeg to your system PATH, or use `--ffmpeg-path` to specify location
+
+### GUI Installation
+
+To build a single-file GUI executable locally:
+
+```powershell
+dotnet publish .\src\AudioExtractor.Gui -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o "E:\AudioExtractor-GUI"
+```
+
+Run the GUI:
+
+```powershell
+E:\AudioExtractor-GUI\AudioExtractor.Gui.exe
+```
 
 ## Quick Start
 
@@ -31,6 +45,10 @@ This creates a WAV file with:
 - 24 kHz sample rate
 - High-pass and low-pass filtering (80 Hz - 11 kHz)
 - Loudness normalization (-16 LUFS)
+
+### GUI Quick Start
+
+Launch the GUI and select an input file, then click **Run**. Use **Edit > Settings** to point to `ffmpeg.exe` if it's not on PATH.
 
 ## Basic Usage
 

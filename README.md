@@ -1,6 +1,6 @@
 # Audio Extractor
 
-Windows console executable for reliable audio extraction using ffmpeg.
+Windows CLI and GUI app for reliable audio extraction using ffmpeg.
 
 ## Features
 
@@ -31,6 +31,12 @@ dotnet build -c Release
 
 ```powershell
 dotnet run --project .\src\AudioExtractor -- <inputFile> [options]
+```
+
+## Run GUI (from source)
+
+```powershell
+dotnet run --project .\src\AudioExtractor.Gui
 ```
 
 ## Usage
@@ -79,4 +85,10 @@ Options:
 cd .\src\AudioExtractor
 
 dotnet publish -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true
+```
+
+- Publish the GUI as a single-file executable with:
+
+```powershell
+dotnet publish .\src\AudioExtractor.Gui -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o "E:\AudioExtractor-GUI"
 ```
