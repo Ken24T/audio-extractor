@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Windows;
 using MessageBox = System.Windows.MessageBox;
 using System.IO;
@@ -19,7 +20,65 @@ public partial class MainWindow : Window
         TtsHighpassTextBox.Text = ExtractionDefaults.TtsHighpassHz.ToString();
         TtsLowpassTextBox.Text = ExtractionDefaults.TtsLowpassHz.ToString();
         TargetLufsTextBox.Text = ExtractionDefaults.TargetLufs.ToString();
+        ApplyAccentTint();
         SetStatus("Ready", isBusy: false);
+    }
+
+    private void OnSourceInitialized(object? sender, EventArgs e)
+    {
+        var settings = UserSettings.Load();
+        _ffmpegPath = settings.FfmpegPath;
+
+        if (settings.HasWindowPlacement && settings.IsWindowPositionValid())
+        {
+            Left = settings.WindowLeft!.Value;
+            Top = settings.WindowTop!.Value;
+            Width = settings.WindowWidth!.Value;
+            Height = settings.WindowHeight!.Value;
+
+            if (Enum.TryParse<System.Windows.WindowState>(settings.WindowState, out var state))
+            {
+                WindowState = state;
+            }
+        }
+        else
+        {
+            // First launch or saved position is off-screen: centre on primary monitor.
+            Left = (SystemParameters.PrimaryScreenWidth - Width) / 2;
+            Top = (SystemParameters.PrimaryScreenHeight - Height) / 2;
+        }
+    }
+
+    private void OnClosing(object? sender, CancelEventArgs e)
+    {
+        var settings = new UserSettings { FfmpegPath = _ffmpegPath };
+
+        if (WindowState == System.Windows.WindowState.Normal)
+        {
+            settings.WindowLeft = Left;
+            settings.WindowTop = Top;
+            settings.WindowWidth = ActualWidth;
+            settings.WindowHeight = ActualHeight;
+        }
+        else
+        {
+            // Save the normal-state bounds so un-maximising restores correctly.
+            settings.WindowLeft = RestoreBounds.Left;
+            settings.WindowTop = RestoreBounds.Top;
+            settings.WindowWidth = RestoreBounds.Width;
+            settings.WindowHeight = RestoreBounds.Height;
+        }
+
+        settings.WindowState = WindowState.ToString();
+        settings.Save();
+    }
+
+    private void ApplyAccentTint()
+    {
+        if (Application.Current.Resources["AccentTintColor"] is System.Windows.Media.Color tint)
+        {
+            AccentTintStop.Color = tint;
+        }
     }
 
     private void OnInputChanged(object sender, RoutedEventArgs e)

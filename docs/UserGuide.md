@@ -50,6 +50,16 @@ This creates a WAV file with:
 
 Launch the GUI and select an input file, then click **Run**. Use **Edit > Settings** to point to `ffmpeg.exe` if it's not on PATH.
 
+### GUI Appearance
+
+The GUI automatically picks up your Windows accent colour and applies it to buttons and the decorative background tint. The colour is read from the Windows Desktop Window Manager registry at startup using the following fallback chain:
+
+1. **Registry** — `HKCU\SOFTWARE\Microsoft\Windows\DWM\AccentColor` (your taskbar/Start menu colour)
+2. **WPF system parameter** — `SystemParameters.WindowGlassColor` (glass colour, if the registry is unavailable)
+3. **Static default** — Teal (`#2A8C82`) if neither system source can be read
+
+The accent colour is detected once when the application launches. If you change your Windows accent colour while the app is running, restart the app to pick up the new colour.
+
 ## Basic Usage
 
 ```text

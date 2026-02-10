@@ -10,6 +10,7 @@ Windows CLI and GUI app for reliable audio extraction using ffmpeg.
 - Loudness normalisation
 - Auto output naming with time tokens
 - Output protection (no overwrite unless `--force`)
+- GUI adapts to your Windows accent colour (with static fallback)
 
 ## Requirements
 
