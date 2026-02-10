@@ -20,6 +20,7 @@
     <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}" />
     <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
     <SolidColorBrush x:Key="AccentDarkBrush" Color="{StaticResource AccentDarkColor}" />
+    <SolidColorBrush x:Key="AccentForegroundBrush" Color="White" />
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}" />
     <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMutedColor}" />
 
@@ -38,10 +39,6 @@
           </BeginStoryboard>
         </EventTrigger>
       </Style.Triggers>
-    </Style>
-
-    <Style TargetType="TextBlock">
-      <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
     </Style>
 
     <Style TargetType="GroupBox">
@@ -67,7 +64,7 @@
 
     <Style TargetType="Button">
       <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
-      <Setter Property="Foreground" Value="White" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}" />
       <Setter Property="Padding" Value="10,6" />
       <Setter Property="BorderBrush" Value="{DynamicResource AccentDarkBrush}" />
       <Setter Property="BorderThickness" Value="1" />
@@ -79,7 +76,8 @@
                     BorderBrush="{TemplateBinding BorderBrush}"
                     BorderThickness="{TemplateBinding BorderThickness}"
                     CornerRadius="6">
-              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                TextElement.Foreground="{TemplateBinding Foreground}" />
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">

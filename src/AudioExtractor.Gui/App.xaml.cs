@@ -33,6 +33,7 @@ public partial class App : Application
 		Resources["AccentDarkColor"] = accentDark;
 		Resources["AccentBrush"] = new SolidColorBrush(accent);
 		Resources["AccentDarkBrush"] = new SolidColorBrush(accentDark);
+		Resources["AccentForegroundBrush"] = new SolidColorBrush(ContrastForeground(accent));
 		Resources["AccentTintColor"] = accentTint;
 	}
 
@@ -71,6 +72,16 @@ public partial class App : Application
 
 		// 3. Static fallback
 		return FallbackAccent;
+	}
+
+	/// <summary>
+	/// Returns white or dark text depending on the perceived brightness of the background.
+	/// Uses the ITU-R BT.601 luma formula.
+	/// </summary>
+	private static Color ContrastForeground(Color bg)
+	{
+		double luma = (0.299 * bg.R + 0.587 * bg.G + 0.114 * bg.B) / 255.0;
+		return luma > 0.5 ? Color.FromRgb(0x1C, 0x1A, 0x18) : Colors.White;
 	}
 
 	/// <summary>
