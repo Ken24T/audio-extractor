@@ -19,7 +19,16 @@ public partial class MainWindow : Window
         TtsHighpassTextBox.Text = ExtractionDefaults.TtsHighpassHz.ToString();
         TtsLowpassTextBox.Text = ExtractionDefaults.TtsLowpassHz.ToString();
         TargetLufsTextBox.Text = ExtractionDefaults.TargetLufs.ToString();
+        ApplyAccentTint();
         SetStatus("Ready", isBusy: false);
+    }
+
+    private void ApplyAccentTint()
+    {
+        if (Application.Current.Resources["AccentTintColor"] is System.Windows.Media.Color tint)
+        {
+            AccentTintStop.Color = tint;
+        }
     }
 
     private void OnInputChanged(object sender, RoutedEventArgs e)
