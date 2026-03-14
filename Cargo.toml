@@ -1,0 +1,26 @@
+[workspace]
+members = [
+    "crates/extractor-domain",
+    "crates/extractor-ffmpeg",
+    "crates/extractor-platform",
+    "crates/extractor-test-support",
+    "crates/extractor-cli",
+    "crates/extractor-gui",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.85"
+version = "0.1.0"
+
+[workspace.dependencies]
+anyhow = "1.0"
+clap = { version = "4.5", features = ["derive"] }
+directories = "5.0"
+eframe = "0.31"
+egui = "0.31"
+rfd = "0.15"
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "2.0"
+toml = "0.8"

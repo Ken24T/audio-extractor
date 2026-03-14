@@ -24,3 +24,7 @@ packages/
 # Temporary files
 *.tmp
 *.temp
+
+# Rust
+target/
+

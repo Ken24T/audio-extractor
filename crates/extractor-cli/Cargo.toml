@@ -1,0 +1,15 @@
+[package]
+name = "extractor-cli"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[[bin]]
+name = "extractor-cli"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true
+extractor-domain = { path = "../extractor-domain" }
+extractor-ffmpeg = { path = "../extractor-ffmpeg" }
+extractor-platform = { path = "../extractor-platform" }

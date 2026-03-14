@@ -2,322 +2,238 @@
 
 ## Overview
 
-Audio Extractor is a Windows CLI and GUI tool that extracts and processes audio from media files using ffmpeg. It's optimized for creating high-quality reference audio samples for Qwen3-TTS (text-to-speech) applications.
+Audio Extractor is a Rust-based CLI and desktop GUI that extracts and processes audio with `ffmpeg` on Windows and Linux. The default profile is tuned for TTS-oriented output, while preserve-input mode keeps the source characteristics closer to the original audio.
 
 ## Requirements
 
-- Windows operating system
-- ffmpeg installed and available on your PATH (or specify path with `--ffmpeg-path`)
-- ffprobe (optional, for duration validation)
+- `ffmpeg` installed and available on `PATH`, or configured explicitly
+- `ffprobe` is optional and enables input-duration validation
+- For local builds: Rust and Cargo
 
 ## Installation
 
-1. Download `audio-extractor.exe` to a folder on your system
-2. Ensure ffmpeg is installed:
-   - Download from [ffmpeg.org](https://ffmpeg.org/download.html)
-   - Add ffmpeg to your system PATH, or use `--ffmpeg-path` to specify location
+### Use Prebuilt Binaries
 
-### GUI Installation
+If you already have a packaged CLI or GUI build, place it somewhere convenient and ensure `ffmpeg` is available either on `PATH` or by explicit configuration.
 
-To build a single-file GUI executable locally:
+### Build From Source
 
-```powershell
-dotnet publish .\src\AudioExtractor.Gui -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o "E:\AudioExtractor-GUI"
+Build the release binaries for your current platform:
+
+```bash
+cargo build --release -p extractor-cli -p extractor-gui
 ```
 
-Run the GUI:
-
-```powershell
-E:\AudioExtractor-GUI\AudioExtractor.Gui.exe
-```
+The resulting binaries are in `target/release/`.
 
 ## Quick Start
 
-Extract audio from a video file with TTS-optimized settings:
+### CLI
 
-```powershell
-audio-extractor.exe video.mp4
+Extract audio from a media file with the default TTS profile:
+
+```bash
+audio-extractor video.mp4
 ```
 
-This creates a WAV file with:
+This produces a WAV file with:
 
-- Mono audio
+- mono output
 - 24 kHz sample rate
-- High-pass and low-pass filtering (80 Hz - 11 kHz)
-- Loudness normalization (-16 LUFS)
+- 80 Hz high-pass filtering
+- 11 kHz low-pass filtering
+- `-16` LUFS loudness target
 
-### GUI Quick Start
+### GUI
 
-Launch the GUI and select an input file, then click **Run**. Use **Edit > Settings** to point to `ffmpeg.exe` if it's not on PATH.
+Launch the GUI, select an input file, review or change the output path, then click `Run`.
 
-### GUI Appearance
+If `ffmpeg` is not on `PATH`, enter the path to the `ffmpeg` binary in the GUI settings field.
 
-The GUI automatically picks up your Windows accent colour and applies it to buttons and the decorative background tint. The colour is read from the Windows Desktop Window Manager registry at startup using the following fallback chain:
+## Time Format
 
-1. **Registry** — `HKCU\SOFTWARE\Microsoft\Windows\DWM\AccentColor` (your taskbar/Start menu colour)
-2. **WPF system parameter** — `SystemParameters.WindowGlassColor` (glass colour, if the registry is unavailable)
-3. **Static default** — Teal (`#2A8C82`) if neither system source can be read
+All time values support:
 
-The accent colour is detected once when the application launches. If you change your Windows accent colour while the app is running, restart the app to pick up the new colour.
+- `SS`
+- `MM:SS`
+- `HH:MM:SS`
 
-## Basic Usage
+Fractional seconds are supported in the seconds field:
+
+- `3.25`
+- `01:30.5`
+- `00:00:10.123`
+
+## CLI Usage
 
 ```text
 audio-extractor <inputFile> [options]
 ```
 
-### Common Examples
-
-
-**Extract a specific time range:**
-
-```powershell
-audio-extractor.exe podcast.mp4 --start 00:05:30 --duration 00:00:20
-
-Creates a 20-second clip starting at 5 minutes 30 seconds.
-
-**Extract between two timestamps:**
-
-**Extract between two timestamps:**
-
-Extracts audio from 15:00 to 15:45 (45 seconds).
-
-**Custom output filename:**
-
-Extracts audio from 15:00 to 15:45 (45 seconds).
-
-**Custom output filename:**
-
-```powershell
-audio-extractor.exe song.mp3 --output my-sample.wav
-```
-
-Skips TTS-specific processing and keeps original audio characteristics.
-
-**Open output file automatically:**
-
-audio-extractor.exe video.mp4 --no-tts
-
-Extracts audio and opens it in your default audio player.
-
-## Time Format
-
-All time values support three formats:
-
-- `SS` - Seconds only (e.g., `90`)
-- `MM:SS` - Minutes and seconds (e.g., `01:30`)
-- `HH:MM:SS` - Hours, minutes, and seconds (e.g., `00:01:30`)
-
-Fractional seconds are supported:
-
-- `3.25` - 3.25 seconds
-- `01:30.5` - 1 minute 30.5 seconds
-
-## Command-Line Options
-
 ### Time Control
 
-| Option              | Description                                              | Example                |
-|---------------------|----------------------------------------------------------|------------------------|
-| `--start <time>`    | Start extraction at specified time                       | `--start 00:02:30`     |
-| `--end <time>`      | End extraction at specified time (requires `--start`)    | `--end 00:03:00`       |
-| `--duration <time>` | Extract for specified duration (requires `--start`)      | `--duration 00:00:20`  |
+| Option | Description | Example |
+|---|---|---|
+| `--start <time>` | Start extraction at the specified time | `--start 00:02:30` |
+| `--end <time>` | End extraction at the specified time, requires `--start` | `--end 00:03:00` |
+| `--duration <time>` | Extract for a specific duration, requires `--start` | `--duration 00:00:20` |
 
-**Note:** Use either `--end` OR `--duration`, not both.
+Rules:
+
+- use either `--end` or `--duration`, not both
+- `--end` and `--duration` require `--start`
+- `end` must be after `start`
+- `duration` must be greater than zero
 
 ### Output Control
 
-| Option            | Description                                              | Example               |
-|-------------------|----------------------------------------------------------|-----------------------|
-| `--output <file>` | Specify output filename                                  | `--output sample.wav` |
-| `--force`         | Overwrite existing output file                           | `--force`             |
-| `--autoplay`      | Open output file in default app after extraction         | `--autoplay`          |
+| Option | Description |
+|---|---|
+| `--output <file>` | Write to a specific output path |
+| `--force` | Overwrite an existing output path |
+| `--autoplay` | Open the output file in the default app after success |
+| `--verbose` | Print the rendered `ffmpeg` command |
 
 ### Audio Processing
 
-| Option                | Description                                             | Default  |
-|-----------------------|---------------------------------------------------------|----------|
-| `--no-tts`            | Disable TTS optimization (preserve original format)     | Disabled |
-| `--sample-rate <int>` | Sample rate (only with `--no-tts`)                      | -        |
-| `--channels <1\|2>`   | Audio channels (only with `--no-tts`)                   | -        |
+| Option | Description | Default |
+|---|---|---|
+| `--no-tts` | Disable the TTS processing profile | Off |
+| `--sample-rate <int>` | Sample rate override in preserve-input mode | Unset |
+| `--channels <1|2>` | Channel override in preserve-input mode | Unset |
 
-### TTS Optimization (default mode)
+### TTS Defaults
 
-| Option                    | Description             | Default |
-|---------------------------|-------------------------|---------|  
-| `--tts-sample-rate <int>` | Target sample rate      | 24000   |
-| `--tts-highpass-hz <int>` | High-pass filter cutoff | 80      |
-| `--tts-lowpass-hz <int>`  | Low-pass filter cutoff  | 11000   |
-| `--target-lufs <int>`     | Target loudness level   | -16     |
+| Option | Description | Default |
+|---|---|---|
+| `--tts-sample-rate <int>` | Target sample rate | `24000` |
+| `--tts-highpass-hz <int>` | High-pass cutoff | `80` |
+| `--tts-lowpass-hz <int>` | Low-pass cutoff | `11000` |
+| `--target-lufs <int>` | Loudness target | `-16` |
 
 ### System
 
-| Option                 | Description                        | Example                               |
-|------------------------|------------------------------------|------------------------------------- -|
-| `--ffmpeg-path <path>` | Path to ffmpeg.exe                 | `--ffmpeg-path C:\\Tools\\ffmpeg.exe` |
-| `--verbose`            | Show ffmpeg command being executed | `--verbose`                           |
+| Option | Description |
+|---|---|
+| `--ffmpeg-path <path>` | Explicit path to the `ffmpeg` binary |
 
+Legacy PowerShell-style aliases such as `-Output`, `-Start`, `-NoTTS`, `-Force`, and `-Verbose` are still accepted.
 
-If you don't specify `--output`, the tool generates a descriptive filename:
+## Output Naming
 
-**Pattern:** `<basename>_<mode>_<time-tags>.wav`
+If you do not specify `--output`, Audio Extractor generates a canonical WAV filename based on the input name, processing mode, and time fields.
 
-- `<mode>` is either `_tts` or `_out`
-- Time tags include start (`s`), end (`e`), and duration (`d`)
+Pattern:
 
-**Examples:**
-
-- `podcast.mp4` → `podcast_tts.wav`
-- `podcast.mp4 --start 00:05:00` → `podcast_tts_s00-05-00.wav`
-- `podcast.mp4 --start 00:05:00 --duration 00:00:30` → `podcast_tts_s00-05-00_d00-00-30.wav`
-
-## Use Cases
-
-
-### Creating TTS Reference Audio
-
-Extract clean speech samples for voice cloning or TTS training:
-
-```powershell
-audio-extractor.exe interview.mp4 --start 00:12:15 --duration 00:00:10
+```text
+<basename>_<mode>_<time-tags>.wav
 ```
 
-The default settings optimize for speech:
+Where:
 
-- Removes low-frequency rumble (high-pass at 80 Hz)
-- Removes high-frequency noise (low-pass at 11 kHz)
-- Normalizes loudness for consistent volume
+- `<mode>` is `_tts` for the default profile
+- `<mode>` is `_out` for preserve-input mode
+- `s`, `e`, and `d` time tags are appended for start, end, and duration
 
-### Extracting Music Segments
+Examples:
 
-Preserve full audio quality for music:
-
-```powershell
-audio-extractor.exe concert.mkv --start 01:23:45 --end 01:27:30 --no-tts --sample-rate 48000 --channels 2
-```
-
-### Quick Audio Preview
-
-Extract and immediately play a segment:
-
-```powershell
-audio-extractor.exe video.mp4 --start 00:10:00 --duration 00:00:05 --autoplay
-```
-
-### Batch Processing
-
-Create a PowerShell script to extract multiple segments:
-
-```powershell
-$segments = @(
-    @{Start="00:05:00"; Duration="00:00:15"; Output="sample1.wav"},
-    @{Start="00:12:30"; Duration="00:00:20"; Output="sample2.wav"},
-    @{Start="00:18:45"; Duration="00:00:10"; Output="sample3.wav"}
-
-)
-
-foreach ($seg in $segments) {
-    audio-extractor.exe input.mp4 --start $seg.Start --duration $seg.Duration --output $seg.Output
-}
-```
-
-## Duration Guards
-
-If ffprobe is available, the tool validates that:
-
-- Start time doesn't exceed input duration
-- End time doesn't exceed input duration
-- Start + duration doesn't exceed input duration
-
-This prevents creating empty or truncated output files.
+- `podcast.mp4` -> `podcast_tts.wav`
+- `podcast.mp4 --start 00:05:00` -> `podcast_tts_s00-05-00.wav`
+- `podcast.mp4 --start 00:05:00 --duration 00:00:30` -> `podcast_tts_s00-05-00_d00-00-30.wav`
 
 ## File Protection
 
-By default, the tool won't overwrite existing files. If the output file exists, it automatically adds a numeric suffix:
+By default, existing output files are not overwritten.
 
-- `sample.wav` exists → creates `sample_001.wav`
-- `sample_001.wav` exists → creates `sample_002.wav`
+If the target filename already exists, Audio Extractor creates a numbered alternative such as:
 
-Use `--force` to override this behavior and overwrite existing files.
+- `sample.wav`
+- `sample_001.wav`
+- `sample_002.wav`
 
-## Tips
+Use `--force` to overwrite the original target path.
 
-1. **Always specify start time for extractions:** Without `--start`, the entire file is processed, which may take longer.
+## Duration Guards
 
-2. **Use `--verbose` when troubleshooting:** See the exact ffmpeg command being run.
+If `ffprobe` is available, Audio Extractor validates that:
 
-3. **Test with short durations first:** Extract 5-10 seconds to verify settings before processing longer segments.
+- the start time does not exceed the input duration
+- the end time does not exceed the input duration
+- `start + duration` does not exceed the input duration
 
-4. **Check audio levels:** If output is too quiet or loud, adjust `--target-lufs` (lower = louder, e.g., `-18` is louder than `-16`).
+If `ffprobe` is not available, extraction still runs, but those duration guards are skipped.
 
-5. **For very quiet source audio:** Try `--target-lufs -12` for more aggressive normalization.
+## GUI Workflow
 
-6. **Keep reference samples short:** For TTS training, 5-15 second clips are typically ideal.
+The Rust desktop GUI provides:
+
+- input and output file selection
+- free-form time fields for start, end, and duration
+- preserve-input and TTS controls
+- a settings field for `ffmpeg` path persistence
+- log output and status feedback during extraction
+
+The GUI uses the same Rust domain and runtime crates as the CLI. Behavioural rules live in the shared core, not only in the UI.
+
+## Common Examples
+
+Extract a 20-second speech clip:
+
+```bash
+audio-extractor podcast.mp4 --start 00:05:30 --duration 00:00:20
+```
+
+Extract between two timestamps:
+
+```bash
+audio-extractor recording.mp4 --start 00:15:00 --end 00:15:45
+```
+
+Preserve full audio characteristics for music:
+
+```bash
+audio-extractor concert.mkv --start 01:23:45 --end 01:27:30 --no-tts --sample-rate 48000 --channels 2
+```
+
+Extract and open immediately after success:
+
+```bash
+audio-extractor video.mp4 --start 00:10:00 --duration 00:00:05 --autoplay
+```
 
 ## Troubleshooting
 
-### "ffmpeg not in PATH"
+### `ffmpeg not in PATH`
 
-Install ffmpeg and add it to your system PATH, or use `--ffmpeg-path`:
+Install `ffmpeg` and ensure it is on `PATH`, or provide the binary path explicitly.
 
-```powershell
-audio-extractor.exe video.mp4 --ffmpeg-path "C:\Tools\ffmpeg\bin\ffmpeg.exe"
+CLI example:
+
+```bash
+audio-extractor video.mp4 --ffmpeg-path /path/to/ffmpeg
 ```
 
-### "Start time exceeds input duration"
+### `Start time exceeds input duration`
 
-Check your input file duration with ffprobe:
+Check the input duration with `ffprobe` and verify your `--start`, `--end`, and `--duration` values.
 
-```powershell
-ffprobe -i video.mp4
+### Output is empty or silent
+
+1. Verify the source file actually contains audio.
+2. Run with `--verbose` to inspect the rendered `ffmpeg` command.
+3. If using preserve-input mode, verify the selected sample-rate and channel overrides are appropriate.
+
+### Output file is large
+
+The tool writes uncompressed WAV output. Larger output files are expected.
+
+## Help
+
+View CLI help:
+
+```bash
+audio-extractor --help
 ```
-
-Ensure your `--start`, `--end`, or `--duration` values are valid.
-
-### Empty or silent output
-
-1. Check source audio: `ffprobe -i input.mp4`
-2. Try `--verbose` to see ffmpeg output
-3. If using `--no-tts`, ensure you're not filtering too aggressively
-
-### Output file size is large
-
-WAV files are uncompressed. A 10-second mono 24kHz WAV is approximately 480 KB. This is expected for lossless audio.
-
-## Getting Help
-
-
-View built-in help:
-
-```powershell
-audio-extractor.exe --help
-
-```
-
-## Examples by Scenario
-
-### Voice Acting Sample
-
-```powershell
-audio-extractor.exe audiobook.m4a --start 00:15:30 --duration 00:00:12
-```
-
-### Podcast Clip
-
-```powershell
-audio-extractor.exe podcast.mp3 --start 00:23:15 --end 00:23:45 --output funny-moment.wav
-```
-
-### Meeting Recording Snippet
-
-```powershell
-audio-extractor.exe meeting.mp4 --start 01:12:00 --duration 00:01:30 --autoplay
-```
-
-### High-Quality Music Export
-
-```powershell
-audio-extractor.exe album.flac --start 00:02:15 --end 00:06:30 --no-tts --sample-rate 96000 --channels 2 --output track.wav
 ```
 
 ### Multiple Extractions with Consistent Settings

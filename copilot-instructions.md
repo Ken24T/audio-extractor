@@ -1,63 +1,80 @@
-# Audio Extractor – Copilot Instructions
+# Audio Extractor - Copilot Instructions
 
 ## Project Overview
 
-Windows console app (C# / .NET 8) that wraps **ffmpeg** to extract audio with Qwen3-friendly defaults. It replaces the legacy `audio-extractor.ps1` script while keeping feature parity.
+Rust-first cross-platform audio extraction tool for Windows and Linux. The repo now centres on a Cargo workspace with shared domain logic, ffmpeg integration, a CLI, and an `egui` desktop GUI.
 
 ## Repository Structure
 
-- `/src/AudioExtractor` – Console application source
-- `/README.md` – Usage and build instructions
-- `audio-extractor.ps1` – Reference script (legacy)
-- `TCTBP Agent.md`, `TCTBP.json` – Shipping workflow rules
+- `/Cargo.toml` - Rust workspace root
+- `/crates/extractor-domain` - Shared parsing, validation, output naming, and extraction-plan logic
+- `/crates/extractor-ffmpeg` - Binary discovery, probing, no-clobbering, execution, and autoplay integration
+- `/crates/extractor-cli` - Cross-platform CLI entry point
+- `/crates/extractor-gui` - Cross-platform `egui` desktop GUI
+- `/crates/extractor-platform` - Config path and settings persistence helpers
+- `/crates/extractor-test-support` - Shared Rust test fixtures
+- `/docs/UserGuide.md` - End-user documentation
+- `/docs/MigrationNotes.md` - Migration and legacy-status notes
+- `/src/AudioExtractor*`, `/tests/AudioExtractor.Tests`, `/audio-extractor.ps1` - Archived legacy implementation references
+- `/TCTBP Agent.md`, `/TCTBP.json` - Shipping workflow rules
 
-## Build & Run
+## Development Commands
 
-```powershell
-dotnet restore
-dotnet build -c Release
+```bash
+cargo check --workspace
+cargo test --workspace
 
-dotnet run --project .\src\AudioExtractor -- <inputFile> [options]
+cargo run -p extractor-cli -- <inputFile> [options]
+cargo run -p extractor-gui
+
+cargo build --release -p extractor-cli -p extractor-gui
 ```
 
-Publish single-file executable:
+The normal ship gate for active work is the Rust workspace check plus relevant Rust tests.
 
-```powershell
-dotnet publish -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true
-```
+## Key Dependencies
 
-## Dependencies
+- `ffmpeg` on PATH, or an explicit `--ffmpeg-path`
+- `ffprobe` is optional and enables input-duration guards
+- `clap` for the CLI
+- `egui` and `eframe` for the GUI
+- `serde`, `toml`, and `directories` for persistence and configuration
 
-- `System.CommandLine` for CLI parsing
-- **External:** `ffmpeg` must be installed and available on PATH (or specify `--ffmpeg-path`)
+## Product Behaviour
 
-## Required CLI Behaviour (Parity with the script)
+CLI and GUI should stay aligned on the same extraction rules:
 
-- `inputFile` is required
-- Time formats: `SS`, `MM:SS`, `HH:MM:SS`
+- `inputFile` is required for CLI execution
+- Supported time formats are `SS`, `MM:SS`, and `HH:MM:SS`
 - `--end` and `--duration` are mutually exclusive
 - `--end` or `--duration` requires `--start`
 - Reject `end <= start` and `duration <= 0`
-- Default output naming includes time tokens (`s`, `e`, `d`) and `_tts` or `_out`
-- No overwrite unless `--force`; otherwise pick a non-clobber filename
-- Output is WAV PCM 16-bit
-- TTS defaults: mono, 24 kHz, highpass 80 Hz, lowpass 11 kHz, loudnorm target -16 LUFS
-- `--no-tts` preserves format and allows `--sample-rate` / `--channels`
+- Default output naming includes time tokens and `_tts` or `_out`
+- Do not overwrite existing files unless `--force`; otherwise choose a non-clobber filename
+- Default output is WAV PCM 16-bit
+- TTS defaults are mono, 24 kHz, high-pass 80 Hz, low-pass 11 kHz, loudnorm target -16 LUFS
+- `--no-tts` preserves original format and allows `--sample-rate` and `--channels`
+- Validate ffmpeg availability before attempting extraction
 
-## Coding Standards
+## Implementation Guidance
 
-- Nullable enabled (`<Nullable>enable</Nullable>`)
-- Guard clauses for argument validation
-- Minimal dependencies; avoid adding packages without clear benefit
-- Windows-first behaviour (PowerShell examples are fine)
+- Keep shared extraction behaviour in `extractor-domain` and `extractor-ffmpeg` instead of duplicating it between CLI and GUI
+- Keep the GUI thin over the shared Rust core
+- Prefer guard clauses and structured errors for validation
+- Preserve agreed behaviour from the migration docs before introducing product changes
+- Minimise dependencies; do not add packages without a clear need
 - Use Australian English spelling in user-facing text
 
-## Error Handling
+## Versioning And Shipping
 
-- Friendly error messages to stderr
-- Non-zero exit codes on failure
-- Validate ffmpeg presence before execution
+- The active shipped version now lives in `/Cargo.toml` under `workspace.package.version`
+- Keep the version in sync with the SHIP tag created for full release shipments
+- Follow the SHIP/TCTBP process in [TCTBP Agent.md](TCTBP Agent.md)
+- Completed numbered slices remain valid ship checkpoints when the user asks for per-slice sync
 
-## Shipping Workflow
+## Documentation Expectations
 
-Follow the SHIP/TCTBP process in [TCTBP Agent.md](TCTBP Agent.md).
+- Review `README.md` and `docs/UserGuide.md` for user-visible features, GUI interaction changes, settings changes, packaging changes, and support-platform changes
+- Keep `docs/MigrationNotes.md` aligned with major migration or legacy-retirement decisions
+- Internal-only changes may skip docs updates, but record a short reason during SHIP or handoff
+- Prefer small, accurate documentation updates over broad rewrites

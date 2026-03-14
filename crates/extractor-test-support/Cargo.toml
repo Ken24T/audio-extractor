@@ -1,0 +1,11 @@
+[package]
+name = "extractor-test-support"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+extractor-domain = { path = "../extractor-domain" }
