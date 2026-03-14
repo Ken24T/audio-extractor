@@ -1,63 +1,75 @@
-# Audio Extractor – Copilot Instructions
+# Audio Extractor - Copilot Instructions
 
 ## Project Overview
 
-Windows console app (C# / .NET 8) that wraps **ffmpeg** to extract audio with Qwen3-friendly defaults. It replaces the legacy `audio-extractor.ps1` script while keeping feature parity.
+Windows-first audio extraction tool built on .NET 8. The repo contains a CLI, a shared core library, and a WPF GUI that all wrap ffmpeg for reliable audio extraction with Qwen3-friendly defaults.
 
 ## Repository Structure
 
-- `/src/AudioExtractor` – Console application source
-- `/README.md` – Usage and build instructions
-- `audio-extractor.ps1` – Reference script (legacy)
-- `TCTBP Agent.md`, `TCTBP.json` – Shipping workflow rules
+- `/src/AudioExtractor` - CLI entry point and argument parsing
+- `/src/AudioExtractor.Core` - Shared extraction logic, validation, and ffmpeg integration
+- `/src/AudioExtractor.Gui` - WPF desktop GUI and persisted user settings
+- `/tests/AudioExtractor.Tests` - Unit tests for CLI parsing and shared behaviour
+- `/docs/UserGuide.md` - End-user documentation
+- `/README.md` - Build, run, and publish overview
+- `/audio-extractor.ps1` - Legacy PowerShell reference implementation
+- `/TCTBP Agent.md`, `/TCTBP.json` - Shipping workflow rules
 
-## Build & Run
+## Development Commands
 
 ```powershell
-dotnet restore
-dotnet build -c Release
+dotnet restore audio-extractor.sln
+dotnet build audio-extractor.sln -c Release
+dotnet test audio-extractor.sln --verbosity minimal
 
 dotnet run --project .\src\AudioExtractor -- <inputFile> [options]
+dotnet run --project .\src\AudioExtractor.Gui
+
+dotnet publish .\src\AudioExtractor\AudioExtractor.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true
+dotnet publish .\src\AudioExtractor.Gui\AudioExtractor.Gui.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true
 ```
 
-Publish single-file executable:
+The normal ship gate is the solution build plus tests. Publish commands are release-build paths and should be used only for packaging or deployment work.
 
-```powershell
-dotnet publish -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true
-```
+## Key Dependencies
 
-## Dependencies
+- `ffmpeg` on PATH, or an explicit `--ffmpeg-path`
+- `ffprobe` is optional and enables input-duration guards
+- `Extended.Wpf.Toolkit` for GUI controls
 
-- `System.CommandLine` for CLI parsing
-- **External:** `ffmpeg` must be installed and available on PATH (or specify `--ffmpeg-path`)
+## Product Behaviour
 
-## Required CLI Behaviour (Parity with the script)
+CLI and GUI should stay aligned on the same extraction rules:
 
-- `inputFile` is required
-- Time formats: `SS`, `MM:SS`, `HH:MM:SS`
+- `inputFile` is required for CLI execution
+- Supported time formats are `SS`, `MM:SS`, and `HH:MM:SS`
 - `--end` and `--duration` are mutually exclusive
 - `--end` or `--duration` requires `--start`
 - Reject `end <= start` and `duration <= 0`
-- Default output naming includes time tokens (`s`, `e`, `d`) and `_tts` or `_out`
-- No overwrite unless `--force`; otherwise pick a non-clobber filename
-- Output is WAV PCM 16-bit
-- TTS defaults: mono, 24 kHz, highpass 80 Hz, lowpass 11 kHz, loudnorm target -16 LUFS
-- `--no-tts` preserves format and allows `--sample-rate` / `--channels`
+- Default output naming includes time tokens and `_tts` or `_out`
+- Do not overwrite existing files unless `--force`; otherwise choose a non-clobber filename
+- Default output is WAV PCM 16-bit
+- TTS defaults are mono, 24 kHz, high-pass 80 Hz, low-pass 11 kHz, loudnorm target -16 LUFS
+- `--no-tts` preserves original format and allows `--sample-rate` and `--channels`
+- Validate ffmpeg availability before attempting extraction
 
-## Coding Standards
+## Implementation Guidance
 
-- Nullable enabled (`<Nullable>enable</Nullable>`)
-- Guard clauses for argument validation
-- Minimal dependencies; avoid adding packages without clear benefit
-- Windows-first behaviour (PowerShell examples are fine)
+- Nullable is enabled; keep null handling explicit
+- Prefer guard clauses for argument and settings validation
+- Keep shared extraction behaviour in `AudioExtractor.Core` instead of duplicating logic between CLI and GUI
+- Minimise dependencies; do not add packages without a clear need
+- Keep Windows-first behaviour and PowerShell examples unless the change requires broader platform support
 - Use Australian English spelling in user-facing text
 
-## Error Handling
+## Versioning And Shipping
 
-- Friendly error messages to stderr
-- Non-zero exit codes on failure
-- Validate ffmpeg presence before execution
+- The shipped version currently lives in `src/AudioExtractor/AudioExtractor.csproj`
+- Keep the version in sync with the SHIP tag created for that release
+- Follow the SHIP/TCTBP process in [TCTBP Agent.md](TCTBP Agent.md)
 
-## Shipping Workflow
+## Documentation Expectations
 
-Follow the SHIP/TCTBP process in [TCTBP Agent.md](TCTBP Agent.md).
+- Review `README.md` and `docs/UserGuide.md` for user-visible features, GUI interaction changes, settings changes, and packaging changes
+- Internal-only changes may skip docs updates, but record a short reason during SHIP or handoff
+- Prefer small, accurate documentation updates over broad rewrites

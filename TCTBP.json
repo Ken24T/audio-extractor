@@ -8,21 +8,67 @@
       "pattern": "^branch\\s+(.+)$"
     }
   },
+  "projectProfile": {
+    "test": "dotnet test audio-extractor.sln --verbosity minimal",
+    "build": "dotnet build audio-extractor.sln -c Release",
+    "releaseBuild": "dotnet publish src/AudioExtractor/AudioExtractor.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true",
+    "releaseBuildPolicy": "explicit-installation-or-deployment-only",
+    "versionFile": "src/AudioExtractor/AudioExtractor.csproj",
+    "versionField": "Project.PropertyGroup.Version"
+  },
   "workflow": {
-    "order": ["preflight", "test", "problems", "bump", "commit", "tag", "push"],
+    "order": ["preflight", "test", "problems", "docsImpact", "bump", "commit", "tag", "push"],
     "requireApproval": ["push"]
   },
-  "testing": {
-    "command": "dotnet test --verbosity minimal"
+  "documentation": {
+    "requireImpactAssessment": true,
+    "blockShipIfUnassessed": true,
+    "allowNoDocChangeWithReason": true,
+    "changeTypes": [
+      "user-visible-feature",
+      "ui-or-interaction",
+      "config-or-settings",
+      "packaging-or-metadata",
+      "roadmap-or-status",
+      "internal-only"
+    ],
+    "rules": [
+      {
+        "changeType": "user-visible-feature",
+        "review": ["README.md", "docs/UserGuide.md"]
+      },
+      {
+        "changeType": "ui-or-interaction",
+        "review": ["README.md", "docs/UserGuide.md"]
+      },
+      {
+        "changeType": "config-or-settings",
+        "review": ["README.md", "docs/UserGuide.md"]
+      },
+      {
+        "changeType": "packaging-or-metadata",
+        "review": ["README.md", "docs/UserGuide.md", "src/AudioExtractor/AudioExtractor.csproj"]
+      },
+      {
+        "changeType": "roadmap-or-status",
+        "review": ["README.md"]
+      },
+      {
+        "changeType": "internal-only",
+        "review": []
+      }
+    ]
   },
   "versioning": {
     "scheme": "semver",
     "patchEveryShip": true,
+    "skipForChangeTypes": ["docs-only", "infrastructure-only"],
     "minorOnFirstShipOfBranch": true,
     "majorExplicitOnly": true
   },
   "tagging": {
     "policy": "everyCommit",
+    "skipWhenNoBump": true,
     "format": "{version}"
   },
   "deployment": {
