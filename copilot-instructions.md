@@ -2,40 +2,43 @@
 
 ## Project Overview
 
-Windows-first audio extraction tool built on .NET 8. The repo contains a CLI, a shared core library, and a WPF GUI that all wrap ffmpeg for reliable audio extraction with Qwen3-friendly defaults.
+Rust-first cross-platform audio extraction tool for Windows and Linux. The repo now centres on a Cargo workspace with shared domain logic, ffmpeg integration, a CLI, and an `egui` desktop GUI.
 
 ## Repository Structure
 
-- `/src/AudioExtractor` - CLI entry point and argument parsing
-- `/src/AudioExtractor.Core` - Shared extraction logic, validation, and ffmpeg integration
-- `/src/AudioExtractor.Gui` - WPF desktop GUI and persisted user settings
-- `/tests/AudioExtractor.Tests` - Unit tests for CLI parsing and shared behaviour
+- `/Cargo.toml` - Rust workspace root
+- `/crates/extractor-domain` - Shared parsing, validation, output naming, and extraction-plan logic
+- `/crates/extractor-ffmpeg` - Binary discovery, probing, no-clobbering, execution, and autoplay integration
+- `/crates/extractor-cli` - Cross-platform CLI entry point
+- `/crates/extractor-gui` - Cross-platform `egui` desktop GUI
+- `/crates/extractor-platform` - Config path and settings persistence helpers
+- `/crates/extractor-test-support` - Shared Rust test fixtures
 - `/docs/UserGuide.md` - End-user documentation
-- `/README.md` - Build, run, and publish overview
-- `/audio-extractor.ps1` - Legacy PowerShell reference implementation
+- `/docs/MigrationNotes.md` - Migration and legacy-status notes
+- `/src/AudioExtractor*`, `/tests/AudioExtractor.Tests`, `/audio-extractor.ps1` - Archived legacy implementation references
 - `/TCTBP Agent.md`, `/TCTBP.json` - Shipping workflow rules
 
 ## Development Commands
 
-```powershell
-dotnet restore audio-extractor.sln
-dotnet build audio-extractor.sln -c Release
-dotnet test audio-extractor.sln --verbosity minimal
+```bash
+cargo check --workspace
+cargo test --workspace
 
-dotnet run --project .\src\AudioExtractor -- <inputFile> [options]
-dotnet run --project .\src\AudioExtractor.Gui
+cargo run -p extractor-cli -- <inputFile> [options]
+cargo run -p extractor-gui
 
-dotnet publish .\src\AudioExtractor\AudioExtractor.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true
-dotnet publish .\src\AudioExtractor.Gui\AudioExtractor.Gui.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true
+cargo build --release -p extractor-cli -p extractor-gui
 ```
 
-The normal ship gate is the solution build plus tests. Publish commands are release-build paths and should be used only for packaging or deployment work.
+The normal ship gate for active work is the Rust workspace check plus relevant Rust tests.
 
 ## Key Dependencies
 
 - `ffmpeg` on PATH, or an explicit `--ffmpeg-path`
 - `ffprobe` is optional and enables input-duration guards
-- `Extended.Wpf.Toolkit` for GUI controls
+- `clap` for the CLI
+- `egui` and `eframe` for the GUI
+- `serde`, `toml`, and `directories` for persistence and configuration
 
 ## Product Behaviour
 
@@ -55,21 +58,23 @@ CLI and GUI should stay aligned on the same extraction rules:
 
 ## Implementation Guidance
 
-- Nullable is enabled; keep null handling explicit
-- Prefer guard clauses for argument and settings validation
-- Keep shared extraction behaviour in `AudioExtractor.Core` instead of duplicating logic between CLI and GUI
+- Keep shared extraction behaviour in `extractor-domain` and `extractor-ffmpeg` instead of duplicating it between CLI and GUI
+- Keep the GUI thin over the shared Rust core
+- Prefer guard clauses and structured errors for validation
+- Preserve agreed behaviour from the migration docs before introducing product changes
 - Minimise dependencies; do not add packages without a clear need
-- Keep Windows-first behaviour and PowerShell examples unless the change requires broader platform support
 - Use Australian English spelling in user-facing text
 
 ## Versioning And Shipping
 
-- The shipped version currently lives in `src/AudioExtractor/AudioExtractor.csproj`
-- Keep the version in sync with the SHIP tag created for that release
+- The active shipped version now lives in `/Cargo.toml` under `workspace.package.version`
+- Keep the version in sync with the SHIP tag created for full release shipments
 - Follow the SHIP/TCTBP process in [TCTBP Agent.md](TCTBP Agent.md)
+- Completed numbered slices remain valid ship checkpoints when the user asks for per-slice sync
 
 ## Documentation Expectations
 
-- Review `README.md` and `docs/UserGuide.md` for user-visible features, GUI interaction changes, settings changes, and packaging changes
+- Review `README.md` and `docs/UserGuide.md` for user-visible features, GUI interaction changes, settings changes, packaging changes, and support-platform changes
+- Keep `docs/MigrationNotes.md` aligned with major migration or legacy-retirement decisions
 - Internal-only changes may skip docs updates, but record a short reason during SHIP or handoff
 - Prefer small, accurate documentation updates over broad rewrites

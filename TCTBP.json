@@ -9,16 +9,39 @@
     }
   },
   "projectProfile": {
-    "test": "dotnet test audio-extractor.sln --verbosity minimal",
-    "build": "dotnet build audio-extractor.sln -c Release",
-    "releaseBuild": "dotnet publish src/AudioExtractor/AudioExtractor.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true",
+    "test": "cargo test --workspace",
+    "build": "cargo check --workspace",
+    "releaseBuild": "cargo build --release -p extractor-cli -p extractor-gui",
     "releaseBuildPolicy": "explicit-installation-or-deployment-only",
-    "versionFile": "src/AudioExtractor/AudioExtractor.csproj",
-    "versionField": "Project.PropertyGroup.Version"
+    "versionFile": "Cargo.toml",
+    "versionField": "workspace.package.version",
+    "profiles": {
+      "legacy-dotnet": {
+        "test": "dotnet test audio-extractor.sln --verbosity minimal",
+        "build": "dotnet build audio-extractor.sln -c Release"
+      },
+      "rust-migration": {
+        "test": "cargo test --workspace",
+        "build": "cargo check --workspace"
+      }
+    },
+    "profileSelection": {
+      "rustWhenPathsMatch": ["Cargo.toml", "Cargo.lock", "crates/", "docs/Rust"],
+      "legacyWhenPathsMatch": ["src/AudioExtractor", "src/AudioExtractor.Core", "src/AudioExtractor.Gui", "tests/AudioExtractor.Tests"],
+      "runBothIfBothStacksTouched": true,
+      "ignoreMissingInactiveTooling": true
+    }
   },
   "workflow": {
     "order": ["preflight", "test", "problems", "docsImpact", "bump", "commit", "tag", "push"],
-    "requireApproval": ["push"]
+    "requireApproval": ["push"],
+    "sliceShipping": {
+      "enabled": true,
+      "shipAtSuccessfulSliceCompletion": true,
+      "slicePattern": "^[0-9]+\\.[0-9]+$",
+      "pushBranchToOriginAfterShip": true,
+      "pushMeaning": "local commit plus push current branch to origin"
+    }
   },
   "documentation": {
     "requireImpactAssessment": true,
@@ -47,7 +70,7 @@
       },
       {
         "changeType": "packaging-or-metadata",
-        "review": ["README.md", "docs/UserGuide.md", "src/AudioExtractor/AudioExtractor.csproj"]
+        "review": ["README.md", "docs/UserGuide.md", "Cargo.toml"]
       },
       {
         "changeType": "roadmap-or-status",
@@ -63,6 +86,7 @@
     "scheme": "semver",
     "patchEveryShip": true,
     "skipForChangeTypes": ["docs-only", "infrastructure-only"],
+    "skipBumpForChangeTypes": ["migration-slice"],
     "minorOnFirstShipOfBranch": true,
     "majorExplicitOnly": true
   },
@@ -70,6 +94,15 @@
     "policy": "everyCommit",
     "skipWhenNoBump": true,
     "format": "{version}"
+  },
+  "migration": {
+    "rustSlices": {
+      "changeType": "migration-slice",
+      "shipOnSuccessfulSliceCompletion": true,
+      "verificationProfile": "rust-migration",
+      "skipLegacyDotnetWhenUntouched": true,
+      "syncPushRemote": "origin"
+    }
   },
   "deployment": {
     "enabled": true,

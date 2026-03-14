@@ -1,0 +1,13 @@
+[package]
+name = "extractor-ffmpeg"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+anyhow.workspace = true
+extractor-domain = { path = "../extractor-domain" }
+thiserror.workspace = true

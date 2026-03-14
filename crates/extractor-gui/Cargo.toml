@@ -1,0 +1,17 @@
+[package]
+name = "extractor-gui"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[[bin]]
+name = "extractor-gui"
+path = "src/main.rs"
+
+[dependencies]
+eframe.workspace = true
+egui.workspace = true
+extractor-domain = { path = "../extractor-domain" }
+extractor-ffmpeg = { path = "../extractor-ffmpeg" }
+extractor-platform = { path = "../extractor-platform" }
+rfd.workspace = true

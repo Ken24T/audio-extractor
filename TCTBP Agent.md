@@ -26,6 +26,7 @@ A Project Profile defines:
 - Where and how to bump version
 - Tagging policy
 - Documentation impact rules and which docs must be reviewed for different change types
+- Whether migration work uses an alternate verification profile, for example Rust slice validation instead of legacy platform validation
 
 ---
 
@@ -40,6 +41,7 @@ A Project Profile defines:
 7. User-facing text follows the project locale, defaulting to Australian English.
 8. Versioned artifacts must stay in sync.
 9. Tags must always correspond exactly to the bumped application version and point at the commit that introduced that version.
+10. Missing tooling for an inactive implementation stack must not block SHIP. Verification must follow the active implementation profile for the change set.
 
 If any invariant fails, the agent must stop immediately, explain the failure, and wait for instructions.
 
@@ -150,6 +152,12 @@ Approval rules:
 
 SHIP = Preflight -> Test -> Problems -> Docs Impact -> Bump -> Commit -> Tag -> Push
 
+Repo-specific rule for this repository:
+
+- During the Rust migration, a successfully completed numbered slice such as `1.1`, `2.3`, or `5.4` is a valid SHIP checkpoint.
+- When the completed work is a Rust slice, use the Rust verification profile from `TCTBP.json` and do not block on missing `.NET` tooling unless the slice changes the legacy `.NET` implementation.
+- When the user has asked for per-slice sync, a successful slice SHIP should push the current branch to `origin` so the local repository and the remote repository remain in sync.
+
 ### 1. Preflight
 
 - Confirm current branch
@@ -161,6 +169,12 @@ SHIP = Preflight -> Test -> Problems -> Docs Impact -> Bump -> Commit -> Tag -> 
 ### 2. Test
 
 Run repo test commands per Project Profile. Stop on failure.
+
+Profile selection rule for this repository:
+
+- If the change set is primarily under `crates/`, root `Cargo.toml`, `Cargo.lock`, or Rust migration planning docs, prefer the Rust migration profile.
+- If the change set touches the active `.NET` application under `src/AudioExtractor*` or `tests/AudioExtractor.Tests`, prefer the legacy `.NET` profile.
+- If both stacks are modified, run the verification required for both affected profiles.
 
 ---
 
@@ -190,6 +204,10 @@ Versioning rules:
 - Minor, `Y`, increments on the first SHIP of a new work branch, resetting `Z` to `0`.
 - Major, `X`, only by explicit instruction.
 
+Migration rule for this repository:
+
+- Rust slice SHIPs during the migration may skip version bump and tag when the current change set does not produce a releaseable end-user artifact and the repo policy marks the slice as `migration-slice`.
+
 The bump must be applied before committing so the resulting commit contains the new version.
 
 ---
@@ -208,13 +226,16 @@ During SHIP, the agent may proceed through Bump -> Commit -> Tag without pausing
 - Tag format: `X.Y.Z`, for example `0.5.27`
 - One tag per shipped commit
 - Tag must point at the commit that introduced the version
+- When a Rust migration slice is shipped under the no-bump rule, skip tag creation for that slice.
 
 ---
 
-### 8. Push (Approval Required)
+### 8. Push
 
 - Push current branch only
 - Never push to protected branches
+- For this repository, when the user has explicitly asked for per-slice sync, treat that as approval to push the current branch to `origin` after each successful slice SHIP.
+- `Push to both repos` in this repository means commit locally and push the same branch to `origin`; no second remote is implied.
 
 ---
 
@@ -281,12 +302,12 @@ The agent should prefer a small, accurate docs update over a broad rewrite.
     }
   },
   "projectProfile": {
-    "test": "dotnet test audio-extractor.sln --verbosity minimal",
-    "build": "dotnet build audio-extractor.sln -c Release",
-    "releaseBuild": "dotnet publish src/AudioExtractor/AudioExtractor.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true",
+    "test": "cargo test --workspace",
+    "build": "cargo check --workspace",
+    "releaseBuild": "cargo build --release -p extractor-cli -p extractor-gui",
     "releaseBuildPolicy": "explicit-installation-or-deployment-only",
-    "versionFile": "src/AudioExtractor/AudioExtractor.csproj",
-    "versionField": "Project.PropertyGroup.Version"
+    "versionFile": "Cargo.toml",
+    "versionField": "workspace.package.version"
   },
   "workflow": {
     "order": ["preflight", "test", "problems", "docsImpact", "bump", "commit", "tag", "push"],

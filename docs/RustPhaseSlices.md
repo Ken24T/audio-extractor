@@ -24,7 +24,7 @@ Each slice should be small enough to reason about in isolation and large enough 
 
 Output:
 
-- CLI behaviour matrix
+- `docs/CurrentBehaviourMatrix.md`
 
 ### Slice 0.2: Core Behaviour Inventory
 
@@ -35,7 +35,7 @@ Output:
 
 Output:
 
-- core behaviour reference
+- `docs/CurrentBehaviourMatrix.md`
 
 ### Slice 0.3: Divergence Audit
 
@@ -44,7 +44,7 @@ Output:
 
 Output:
 
-- divergence list with decisions
+- `docs/DivergenceAudit.md`
 
 ## Phase 1 Slices: Rust Workspace Bootstrap
 
