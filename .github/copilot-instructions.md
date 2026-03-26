@@ -85,7 +85,8 @@ CLI and GUI should stay aligned on the same extraction rules:
 - The active shipped version lives in `/Cargo.toml` under `workspace.package.version`
 - Keep the version in sync with the SHIP tag created for full release shipments
 - Follow the SHIP/TCTBP process in `.github/TCTBP Agent.md` and `.github/TCTBP.json`
-- Completed numbered slices remain valid ship checkpoints when the user asks for per-slice sync, but the runtime trigger surface should now use the standard TCTBP trigger set, including bare `branch` for closeout-only mode and `branch <new-branch-name>` for next-branch creation, rather than the old bare `tctbp` shortcut
+- The standard TCTBP trigger surface for this repo includes `checkpoint`, bare `branch` for closeout-only mode, and `branch <new-branch-name>` for next-branch creation rather than the old bare `tctbp` shortcut
+- Completed numbered slices remain valid ship checkpoints when the user asks for per-slice sync, but local-only preservation between those milestones should use `checkpoint`
 
 ## Documentation Expectations
 

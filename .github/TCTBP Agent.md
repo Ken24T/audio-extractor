@@ -2,11 +2,11 @@
 
 ## Purpose
 
-This agent governs milestone, publishing, handover, resume, sync, status, recovery, and deployment actions for Audio Extractor.
+This agent governs milestone, checkpointing, publishing, handover, resume, sync, status, recovery, and deployment actions for Audio Extractor.
 
 Primary objective: no code is ever lost while keeping local and remote repository state validated, recoverable, and easy to resume on another machine.
 
-This workflow is for explicit operator actions such as `ship`, `publish`, `handover`, `resume`, `deploy`, `status`, `abort`, `branch`, and `branch <name>`. It is not for normal feature implementation work.
+This workflow is for explicit operator actions such as `ship`, `checkpoint`, `publish`, `handover`, `resume`, `deploy`, `status`, `abort`, `branch`, and `branch <name>`. It is not for normal feature implementation work.
 
 Quick reference: see [TCTBP Cheatsheet.md](TCTBP%20Cheatsheet.md).
 
@@ -39,7 +39,7 @@ Repo-specific operational values that must be preserved:
 ## Core Invariants
 
 1. Verification must pass before irreversible actions unless `.github/TCTBP.json` explicitly allows a docs/infra-only shortcut.
-2. Problems must be zero before any commit.
+2. Problems must be zero before any release, publication-linked, or shared-state commit unless `.github/TCTBP.json` explicitly allows a local-only checkpoint commit to preserve work first.
 3. Protected Git actions such as push, force-push, branch deletion, history rewrite, or remote modification require explicit approval unless granted by the active workflow trigger.
 4. Tags must correspond exactly to the version committed in `Cargo.toml` and point to the commit that introduced that version.
 5. No-code-loss takes priority over workflow completion.
@@ -54,6 +54,7 @@ If any invariant fails, stop and explain the blocker.
 Supported workflow triggers are:
 
 - `ship`, `ship please`, `shipping`, `prepare release`
+- `checkpoint`, `checkpoint please`
 - `publish`, `publish please`
 - `deploy`, `deploy please`
 - `handover`, `handover please`
@@ -79,6 +80,23 @@ Key rules:
 - create an upstream on first publication when the branch is otherwise clean and unpublished
 - stop if the branch is behind or diverged from origin
 - never create a version bump, tag, or metadata update as part of `publish`
+
+## Checkpoint Workflow
+
+Trigger: `checkpoint` / `checkpoint please`
+
+Purpose: create a durable local-only checkpoint commit on the current branch without changing version, tags, metadata, or remote state.
+
+Key rules:
+
+- stop if `HEAD` is detached
+- stop if the working tree is clean
+- stop if conflicts exist or a merge, rebase, cherry-pick, or revert is in progress
+- stage the current non-ignored tracked and untracked changes
+- create a clearly marked local-only checkpoint commit
+- do not run heavyweight verification gates as a blocker for this workflow
+- render a concise four-column summary table showing the previous HEAD, the new checkpoint commit, the working-tree result, the upstream sync state, and explicit absence of remote side effects
+- never push, create a tag, bump version, or update handover metadata as part of `checkpoint`
 
 ## Branch Workflow
 
@@ -240,7 +258,9 @@ Verify and build policy:
 
 Versioning rules:
 
-- patch bump on every SHIP except docs-only, infrastructure-only, or migration-slice changes
+- patch bump on every SHIP when `.github/TCTBP.json` enables `versioning.patchEveryShip`
+- whether docs-only or infrastructure-only SHIPs still receive a patch bump is controlled by `.github/TCTBP.json` field `versioning.patchEveryShipForDocsInfrastructureOnly`
+- `migration-slice` changes remain skip-worthy when listed in `.github/TCTBP.json` `versioning.skipForChangeTypes`
 - first SHIP on a `feature/` or `slice/` branch gets a minor bump instead of a patch bump
 - major bump only by explicit instruction
 - apply version changes to `Cargo.toml` before committing

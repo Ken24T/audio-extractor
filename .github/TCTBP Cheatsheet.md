@@ -35,6 +35,7 @@ Formal source release workflow.
 - assesses docs impact
 - bumps version when required
 - commits, tags, and pushes
+- patch bump behaviour is controlled by `.github/TCTBP.json`; in this repo, docs-only and infrastructure-only changes do not bump unless that JSON setting is changed
 
 ### `publish` / `publish please`
 
@@ -43,6 +44,16 @@ Safely publish the current clean branch to `origin` without release semantics.
 - no version bump
 - no tag creation
 - no handover metadata update
+
+### `checkpoint` / `checkpoint please`
+
+Create a durable local-only checkpoint commit on the current branch without release or sync side effects.
+
+- stops if `HEAD` is detached, the tree is clean, conflicts exist, or a merge/rebase/cherry-pick/revert is in progress
+- stages the current non-ignored tracked and new files
+- creates a clearly marked non-release local commit
+- ends with a concise four-column table covering the previous HEAD, new checkpoint commit, resulting working-tree state, sync state, and explicit local-only outcome
+- does not push, tag, bump version, or update handover metadata
 
 ### `handover` / `handover please`
 
@@ -98,6 +109,7 @@ Repo-specific docs commonly reviewed:
 ## Quick Choice
 
 - Need a release version or tag: use `ship`
+- Need a durable local-only save before publishing or handing over: use `checkpoint`
 - Need to sync a clean branch without release or metadata side effects: use `publish`
 - Need to stop on one machine and resume on another safely: use `handover`
 - Need to restore the last handed-over branch before starting work: use `resume`
