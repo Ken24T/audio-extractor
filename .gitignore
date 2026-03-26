@@ -1,3 +1,5 @@
+.github/.tctbp-backups/
+
 # Build outputs
 bin/
 obj/
