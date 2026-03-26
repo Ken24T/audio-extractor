@@ -71,14 +71,12 @@ Read-only operator snapshot of branch state, sync status, tags, version source, 
 
 Inspect and recover from a partially completed SHIP, sync, or deploy workflow.
 
-### `branch` and `branch <new-branch-name>`
+### `branch <new-branch-name>`
 
-Close out current work cleanly and either stop on `master` or start the next branch.
+Close out current work cleanly and start the next branch.
 
 - asks for explicit confirmation before merging a non-default branch back into `master`
 - requires the source branch to be published before the transition continues
-- in bare `branch` mode, stops on updated `master`
-- in `branch <new-branch-name>` mode, creates and switches to the requested next branch
 
 ## Docs Impact Reminder
 
@@ -104,5 +102,4 @@ Repo-specific docs commonly reviewed:
 - Need current-platform release artefacts built: use `deploy`
 - Need a quick repo state check: use `status`
 - Need to recover from a partial workflow state: use `abort`
-- Need to close out current work and stop on `master`: use `branch`
 - Need to start the next branch: use `branch <new-branch-name>`
