@@ -1,7 +1,7 @@
 {
   "branch": "infrastructure/reconcile-tctbp",
-  "commit": "8917e18919cde6a944a156ebb8de5fa8c0735b60",
-  "version": "0.1.0",
+  "commit": "39e74db63b823259558f19c599867095775defad",
+  "version": "0.1.1",
   "latestTag": "0.4.3",
-  "updatedAt": "2026-03-26T02:56:40Z"
+  "updatedAt": "2026-03-26T21:42:45Z"
 }
