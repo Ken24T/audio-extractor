@@ -96,6 +96,7 @@ Key rules:
 - create a clearly marked local-only checkpoint commit
 - do not run heavyweight verification gates as a blocker for this workflow
 - render a concise four-column summary table showing the previous HEAD, the new checkpoint commit, the working-tree result, the upstream sync state, and explicit absence of remote side effects
+- emit that checkpoint table as a standalone Markdown block with a blank line before and after it
 - never push, create a tag, bump version, or update handover metadata as part of `checkpoint`
 
 ## Branch Workflow
@@ -151,6 +152,7 @@ Key safety rules:
 - stop on divergence rather than guessing
 - never auto-merge or auto-rebase as part of reconciliation
 - update the metadata branch using a secondary worktree or another non-destructive mechanism
+- finish with the five-row handover summary as a standalone Markdown table block with a blank line before and after it, then add a short completion line
 
 ## Resume Workflow
 
@@ -163,9 +165,11 @@ Key safety rules:
 - stop if `HEAD` is detached
 - consult metadata before arbitrary branch-recency inference
 - prefer metadata over an arbitrary clean non-default branch
+- detect when switching branches would strand local unpublished work on the current branch
+- preserve that work first through a checkpoint or rescue branch when the configured safety rules allow it
 - create a local tracking branch from remote when the intended branch is published but missing locally
 - allow fast-forward only when local is clean and behind
-- stop when local is ahead, diverged, or ambiguous instead of publishing during `resume`
+- stop when preserve-local handling would require publication, or when local state is ahead, diverged, conflicted, or ambiguous
 
 ## Status Workflow
 
@@ -176,8 +180,10 @@ Purpose: provide a read-only operator snapshot of the repo.
 Behaviour:
 
 - fetch remote state first
-- render a four-column table using `Origin`, `Local`, `Status`, and `Action(s)`
+- make the four-column table using `Origin`, `Local`, `Status`, and `Action(s)` the first user-visible output block
+- emit that status table as a standalone Markdown block with a blank line before and after it
 - include branch/upstream state, head commit, default-branch state, tag state, ahead/behind counts, working tree state, version source, metadata state, and whether `resume`, `publish`, `ship`, or `handover` is recommended
+- put recommendations only after the table
 - never mutate the repo from `status`
 
 ## Abort Workflow

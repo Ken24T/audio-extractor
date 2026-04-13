@@ -53,11 +53,15 @@ Create a durable local-only checkpoint commit on the current branch without rele
 - stages the current non-ignored tracked and new files
 - creates a clearly marked non-release local commit
 - ends with a concise four-column table covering the previous HEAD, new checkpoint commit, resulting working-tree state, sync state, and explicit local-only outcome
+- emits that table as a standalone Markdown block with a blank line before and after it
 - does not push, tag, bump version, or update handover metadata
 
 ### `handover` / `handover please`
 
 Safely checkpoint and publish the current work branch, then refresh `tctbp/handover-state` so another machine can resume deterministically.
+
+- ends with a five-row handover table emitted as a standalone Markdown block with a blank line before and after it
+- follows the table with a short completion line naming the handed-over branch and commit
 
 ### `resume` / `resume please`
 
@@ -77,6 +81,10 @@ Repo-specific target:
 ### `status` / `status please`
 
 Read-only operator snapshot of branch state, sync status, tags, version source, and recommended next steps.
+
+- must begin with the fuller four-column comparison table using `Origin`, `Local`, `Status`, and `Action(s)`
+- emits that table as a standalone Markdown block with a blank line before and after it
+- puts any recommendation after the table, not before it
 
 ### `abort`
 
