@@ -3,9 +3,20 @@
   "governance": {
     "sourceOfTruth": "TCTBP.json",
     "fallbackDocument": "TCTBP Agent.md",
-    "templateMode": true,
+    "templateMode": false,
     "templateType": "web",
-    "templateInstructions": "This repository is the canonical source for the TCTBP-Web templates and runner architecture. Replace repo-specific values in downstream projects. Scaffolded projects receive a populated non-template profile."
+    "templateInstructions": "This repository uses the TCTBP workflow as a repo-specific profile. Preserve Rust workspace commands, docs paths, version source (workspace.package), tag format, and local runtime conventions when updating these files."
+  },
+  "branchModel": {
+    "strategy": "simple",
+    "strategies": {
+      "simple": {
+        "description": "Single production branch only. Suitable for template repos, libraries, and non-deployed projects.",
+        "productionBranch": "master",
+        "promoteEnabled": false,
+        "deployStagingEnabled": false
+      }
+    }
   },
   "project": {
     "name": "audio-extractor",
