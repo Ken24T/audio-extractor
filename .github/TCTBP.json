@@ -114,7 +114,10 @@
     "stopIfBranchBehindUpstream": true,
     "stopIfBranchDiverged": true,
     "stopIfWorkingTreeDirty": true,
-    "purpose": "Create a formal shipped version from a clean, fetched branch, allowing first-time publication from a clean unpublished branch while keeping Cargo workspace version, tags, and remote state recoverable and unambiguous."
+    "purpose": "Create a formal shipped version from a clean, fetched branch, allowing first-time publication from a clean unpublished branch while keeping Cargo workspace version, tags, and remote state recoverable and unambiguous.",
+    "allowedBranches": [
+      "master"
+    ]
   },
   "publish": {
     "preferredTriggers": [
