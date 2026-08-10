@@ -1205,7 +1205,7 @@ dependencies = [
 
 [[package]]
 name = "extractor-cli"
-version = "0.4.5"
+version = "0.4.6"
 dependencies = [
  "clap",
  "extractor-domain",
@@ -1215,7 +1215,7 @@ dependencies = [
 
 [[package]]
 name = "extractor-domain"
-version = "0.4.5"
+version = "0.4.6"
 dependencies = [
  "serde",
  "thiserror 2.0.18",
@@ -1223,7 +1223,7 @@ dependencies = [
 
 [[package]]
 name = "extractor-ffmpeg"
-version = "0.4.5"
+version = "0.4.6"
 dependencies = [
  "anyhow",
  "extractor-domain",
@@ -1232,7 +1232,7 @@ dependencies = [
 
 [[package]]
 name = "extractor-gui"
-version = "0.4.5"
+version = "0.4.6"
 dependencies = [
  "eframe",
  "egui",
@@ -1244,7 +1244,7 @@ dependencies = [
 
 [[package]]
 name = "extractor-platform"
-version = "0.4.5"
+version = "0.4.6"
 dependencies = [
  "directories",
  "extractor-domain",
@@ -1254,7 +1254,7 @@ dependencies = [
 
 [[package]]
 name = "extractor-test-support"
-version = "0.4.5"
+version = "0.4.6"
 dependencies = [
  "extractor-domain",
 ]
