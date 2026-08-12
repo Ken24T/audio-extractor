@@ -86,7 +86,37 @@
       "resume please",
       "status",
       "status please",
-      "abort"
+      "abort",
+      "handover local",
+      "handover local please",
+      "orient",
+      "orient please",
+      "preflight",
+      "preflight please",
+      "release",
+      "release please",
+      "prepare release please",
+      "hotfix",
+      "hotfix please",
+      "hotfix start",
+      "hotfix start please",
+      "hotfix finish",
+      "hotfix finish please",
+      "emergency fix",
+      "emergency fix please",
+      "run tests",
+      "run lint",
+      "run build",
+      "gate test",
+      "gate lint",
+      "gate build",
+      "version status",
+      "version check",
+      "rollback",
+      "revert last checkpoint",
+      "ticket create",
+      "ticket report",
+      "ticket triage"
     ],
     "caseInsensitive": true,
     "branchCommand": {
@@ -103,8 +133,7 @@
     "preferredTriggers": [
       "ship",
       "ship please",
-      "shipping",
-      "prepare release"
+      "shipping"
     ],
     "requireFetchedOriginInPreflight": true,
     "stopIfDetachedHead": true,
@@ -646,6 +675,7 @@
     ],
     "workflowIds": [
       "status",
+      "preflight",
       "abort",
       "resume",
       "checkpoint",
@@ -655,7 +685,14 @@
       "promote",
       "deploy",
       "ship",
-      "hotfix"
+      "hotfix",
+      "release",
+      "ticket",
+      "gate",
+      "version",
+      "rollback",
+      "scaffold",
+      "orient"
     ]
   },
   "candidateGuard": {
@@ -746,5 +783,18 @@
       "message": "This push has a net deletion of {net} lines ({added} added, {removed} removed). Confirm this is intentional."
     },
     "comment": "Code-loss prevention gates apply to branch closeout merges, promote merges, and any agent-performed merge into a default or environment branch."
+  },
+  "release": {
+    "preferredTriggers": [
+      "release",
+      "release please",
+      "prepare release",
+      "prepare release please"
+    ],
+    "executionCommand": "node scripts/tctbp-run-release.js --no-docs-impact \"<reason>\"",
+    "dryRunCommand": "node scripts/tctbp-run-release.js --dry-run",
+    "resumeCommand": "node scripts/tctbp-run-release.js --resume",
+    "purpose": "Orchestrate the configured environment pipeline (deploy, promote, ship) with an atomic release journal and candidate revalidation.",
+    "comment": "Added during reconcile to tctbp-web-08d2979; prepare release now routes to release, not ship."
   }
 }
