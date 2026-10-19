@@ -1,5 +1,15 @@
 # Audio Extractor - Copilot Instructions
 
+## Shared code and documentation policy
+
+This repository adopts shared-development-policy 1.0.0. Read
+`.github/DEVELOPMENT_POLICY.md` and its machine-readable companion
+`.github/development-policy.json` for code, configuration and documentation work.
+Use `node scripts/check-modularity.cjs --changed` for advisory size signals.
+Record design reviews for new or materially changed large files in change notes.
+File size alone never requires a split or grants approval to commit or publish.
+Existing correctness, security, Git and approval protections remain in force.
+
 ## Project Overview
 
 Rust-first cross-platform audio extraction tool for Windows and Linux. The repo now centres on a Cargo workspace with shared domain logic, ffmpeg integration, a CLI, and an `egui` desktop GUI.
