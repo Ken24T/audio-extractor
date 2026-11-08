@@ -783,5 +783,11 @@
     "resumeCommand": "node scripts/tctbp-run-release.js --resume",
     "purpose": "Orchestrate the configured environment pipeline (deploy, promote, ship) with an atomic release journal and candidate revalidation.",
     "comment": "Added during reconcile to tctbp-web-08d2979; prepare release now routes to release, not ship."
+  },
+  "begin": {
+    "contract": "tctbp-begin/1",
+    "executionCommand": "node scripts/tctbp-run-begin.cjs",
+    "profile": ".github/TCTBP_BEGIN.json",
+    "owner": "TCTBP common core; project-owned capabilities"
   }
 }
